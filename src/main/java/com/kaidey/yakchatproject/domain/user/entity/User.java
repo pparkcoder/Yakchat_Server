@@ -100,10 +100,15 @@ public class User implements UserDetails {
         return true;
     }
 
-//    @Override
-//    public String getName() {
-//        return username;
-//    }
+    public void addQuestion(Question question) {
+        this.questions.add(question);
+        question.setUser(this);
+    }
+
+    public void addAnswer(Answer answer) {
+        this.answers.add(answer);
+        answer.setUser(this);
+    }
 
     @Override
     public boolean isEnabled() {

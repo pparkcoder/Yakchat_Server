@@ -73,8 +73,7 @@ public class AnswerService {
         Answer answer = new Answer();
         answer.setContent(answerDto.getContent());
         answer.setQuestion(question);
-        answer.setUser(user);
-
+        user.addAnswer(answer);
         // 이미지가 있으면 미리 리스트에 추가
         List<Image> imageList = new ArrayList<>();
         if (images != null && !images.isEmpty()) {

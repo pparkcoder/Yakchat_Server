@@ -65,9 +65,8 @@ public class QuestionService {
         Question question = new Question();
         question.setTitle(questionDto.getTitle());
         question.setContent(questionDto.getContent());
-//        question.setIsAnonymous(questionDto.getIsAnonymous());
         question.setSubject(subject);
-        question.setUser(user);
+        user.addQuestion(question);
         userService.updateUserActivity(user, 1, 0, 0, 0, 0);
 
         // 이미지 처리
