@@ -52,11 +52,11 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Image> images = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Question> questions = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Answer> answers = new ArrayList<>();
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Question> questions = new ArrayList<>();
+//
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Answer> answers = new ArrayList<>();
 
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -100,15 +100,10 @@ public class User implements UserDetails {
         return true;
     }
 
-    public void addQuestion(Question question) {
-        this.questions.add(question);
-        question.setUser(this);
-    }
-
-    public void addAnswer(Answer answer) {
-        this.answers.add(answer);
-        answer.setUser(this);
-    }
+//    @Override
+//    public String getName() {
+//        return username;
+//    }
 
     @Override
     public boolean isEnabled() {
