@@ -1,0 +1,92 @@
+package com.kaidey.yakchatproject.domain.email.service;
+
+import com.kaidey.yakchatproject.domain.email.dto.EmailDto;
+import com.kaidey.yakchatproject.global.util.RedisUtil;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import java.util.Random;
+
+@Slf4j
+@Service
+public class EmailService {
+
+    private final RedisUtil redisUtil;
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
+    @Autowired
+    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender) {
+        this.redisUtil = redisUtil;
+        this.mailSender = mailSender;
+    }
+
+    // 숫자 6자리 인증 코드 생성
+    private String createdCode(){
+        int leftLimit = 48;
+        int rightLimit = 57;
+        int codeLength = 6;
+        Random random = new Random();
+
+        return random.ints(leftLimit, rightLimit + 1)
+                .limit(codeLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+
+    }
+
+
+    // 이메일 내용 및 전송 설정
+    private MimeMessage createEmailForm(String toEmail) throws MessagingException {
+        String code = createdCode();
+        MimeMessage message = mailSender.createMimeMessage();
+        message.addRecipients(MimeMessage.RecipientType.TO, toEmail);
+        message.setSubject("[PillChat]본인 인증 번호 안내드립니다.");
+
+        String mailContect = "";
+        mailContect += "<div style='margin:20px;'>";
+        mailContect += "<h4>안녕하세요. <strong>PillChat</strong> 입니다.</h4>";
+        mailContect += "<h4>인증번호는 발송된 시점부터 3분간만 유효하니 확인 후 바로 입력해 주시기 바랍니다.</h4>";
+        mailContect += "<br>";
+        mailContect += "<div align='center' style='border:1px solid black; font-family:verdana';>";
+        mailContect += "<div style='font-size:130%;margin-top:25px'>";
+        mailContect += "인증번호 : <strong>";
+        mailContect += code + "</strong><div><br/> "; // 메일에 인증번호 넣기
+        mailContect += "</div>";
+        message.setFrom(fromEmail);
+        message.setText(mailContect, "utf-8", "html");
+
+        redisUtil.setData(toEmail, code);
+
+        return message;
+    }
+
+    // 인증 코드 전송
+    public void sendEmailCode(EmailDto emailDto) throws MessagingException {
+        String toEmail = emailDto.getEmail();
+        if (redisUtil.existData(toEmail)){
+            redisUtil.deleteData(toEmail);
+        }
+
+        mailSender.send(createEmailForm(toEmail));
+    }
+    
+    // 인증 코드 검증
+    public Boolean verifyEmailCode(EmailDto emailDto){
+        String userEmail = emailDto.getEmail();
+        String userCode = emailDto.getCode();
+
+        if(userCode == null || !userCode.equals(redisUtil.getData(userEmail))){
+            return false;
+        }
+
+        return true;
+    }
+}
