@@ -8,6 +8,7 @@ import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.repository.ImageRepository;
 import com.kaidey.yakchatproject.domain.like.entity.Like;
 import com.kaidey.yakchatproject.domain.like.repository.LikeRepository;
+import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
 import com.kaidey.yakchatproject.domain.question.repository.QuestionRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -238,6 +240,35 @@ public class AnswerService {
         return likeRepository.countByAnswerId(answerId);
     }
 
+    // 회원 ID로 답변 조회 (최신 순)
+    @Transactional
+    public List<QuestionWithAnswersDto> getAnswersByUserIdByCreatedAtDesc(Long userId) {
+
+        // 내가 작성한 답변 조회
+        List<AnswerDto> answers = answerRepository.findTop5ByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+
+        // 질문 ID 별 답변 개수 count
+        Map<Long, Long> answerCount = answers.stream().collect(Collectors.groupingBy(AnswerDto::getQuestionId, Collectors.counting()));
+
+        // 질문 ID 추출
+        List<Long> questionIds = answers.stream().distinct().map(AnswerDto::getQuestionId).collect(Collectors.toList())
+                        .stream().distinct().collect(Collectors.toList());
+
+        // 질문 조회
+        List<QuestionWithAnswersDto> questions = questionRepository.findTop5ByIdInOrderByCreatedAtDesc(questionIds).stream()
+                .map(this::convertToQuestionWithAnswersDto)
+                .collect(Collectors.toList());
+
+        // 질문 별 답변 개수 매핑
+        for (QuestionWithAnswersDto question : questions) {
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
+        }
+
+        return questions;
+    }
+
     // Answer 엔티티를 AnswerDto로 변환
     private AnswerDto convertToDto(Answer answer) {
         AnswerDto answerDto = new AnswerDto();
@@ -254,5 +285,23 @@ public class AnswerService {
         answerDto.setImages(imageUtils.convertToImageMap(answer.getImages(), totalSteps));
 
         return answerDto;
+    }
+
+    private QuestionWithAnswersDto convertToQuestionWithAnswersDto(Question question) {
+        QuestionWithAnswersDto dto = new QuestionWithAnswersDto();
+        dto.setId(question.getId());
+        dto.setTitle(question.getTitle());
+        dto.setContent(question.getContent());
+//        dto.setIsAnonymous(question.getIsAnonymous());
+        dto.setSubjectId(question.getSubject().getId());
+        dto.setSubjectName(question.getSubject().getName());
+        dto.setUserId(question.getUser().getId());
+        dto.setUserName(question.getUser().getUsername());
+        dto.setCreatedAt(question.getCreatedAt());
+        dto.setUpdatedAt(question.getModifiedAt());
+        dto.setLikeCount(question.getLikes());
+        dto.setViewCount(question.getViewCount());
+        dto.setImages(imageUtils.convertToImageDtos(question.getImages()));
+        return dto;
     }
 }

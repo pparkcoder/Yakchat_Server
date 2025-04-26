@@ -26,4 +26,7 @@ public class QuestionWithAnswersDto {
 
     // 추가: 관련된 답변 목록
     private List<AnswerDto> answers;
+
+    // 추가 : 관련된 답변 개수
+    private int answerCount;
 }

@@ -1,7 +1,10 @@
 package com.kaidey.yakchatproject.domain.question.repository;
 
+import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
+import com.kaidey.yakchatproject.domain.scrap.entity.Scrap;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +18,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findBySubjectIdOrderByCreatedAtAsc(Long subjectId);
     List<Question> findTop5ByOrderByCreatedAtDesc();
     List<Question> findTop5BySubjectIdOrderByCreatedAtDesc(Long subjectId);
-
-
+    List<Question> findTop5ByUserIdOrderByCreatedAtDesc(Long userId);
+    List<Question> findTop5ByIdInOrderByCreatedAtDesc(List<Long> questionIds);
 }

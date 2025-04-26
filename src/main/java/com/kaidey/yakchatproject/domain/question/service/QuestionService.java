@@ -19,12 +19,11 @@ import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
 import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -124,6 +123,7 @@ public class QuestionService {
                 .collect(Collectors.toList());
 
         questionDto.setAnswers(answerDtos);
+        questionDto.setAnswerCount(answerDtos == null ? 0 : answerDtos.size());
         return questionDto;
     }
 
@@ -267,6 +267,33 @@ public class QuestionService {
         return questionRepository.findByTitleContainingOrContentContaining(keyword, keyword).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    // 회원 ID로 질문 조회 (최신 순)
+    @Transactional
+    public List<QuestionWithAnswersDto> getQuestionsByUserIdByCreatedAtDesc(Long userId) {
+
+        // 내가 작성한 질문 조회
+        List<QuestionWithAnswersDto> questions = questionRepository.findTop5ByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToQuestionWithAnswersDto)
+                .collect(Collectors.toList());
+
+        // 질문 ID 추출
+        List<Long> questionIds = questions.stream().map(QuestionWithAnswersDto::getId).collect(Collectors.toList());
+
+        // 질문 별 답변 조회
+        List<AnswerDto> answers = answerRepository.findByQuestionIdInOrderByCreatedAtDesc(questionIds).stream()
+                .map(this::convertAnswerToDto)
+                .collect(Collectors.toList());
+
+        // 질문 별 답변 개수 count
+        Map<Long, Long> answerCount = answers.stream().collect(Collectors.groupingBy(AnswerDto::getQuestionId, Collectors.counting()));
+
+        // 질문 별 답변 개수 매핑
+        for (QuestionWithAnswersDto question : questions) {
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());;
+        }
+        return questions;
     }
 
     // Question 엔티티를 QuestionDto로 변환
