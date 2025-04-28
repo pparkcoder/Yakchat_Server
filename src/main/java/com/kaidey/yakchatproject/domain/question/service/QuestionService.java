@@ -291,10 +291,43 @@ public class QuestionService {
 
         // 질문 별 답변 개수 매핑
         for (QuestionWithAnswersDto question : questions) {
-            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());;
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
         }
         return questions;
     }
+
+    // 채택 답변 조회 (최신 순)
+    @Transactional
+    public List<QuestionWithAnswersDto> getQuestionsByUserIdByAcceptedByCreatedAtDesc(Long userId) {
+
+        // 내가 작성한 질문 조회
+        List<QuestionWithAnswersDto> questions = questionRepository.findTop5ByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToQuestionWithAnswersDto)
+                .collect(Collectors.toList());
+
+        // 질문 ID 추출
+        List<Long> questionIds = questions.stream().map(QuestionWithAnswersDto::getId).collect(Collectors.toList());
+
+        // 질문 별 채택된 답변 조회
+        List<AnswerDto> answers = answerRepository.findByQuestionIdAndIsAcceptedInOrderByCreatedAtDesc(questionIds, true).stream()
+                .map(this::convertAnswerToDto)
+                .collect(Collectors.toList());
+
+        // 질문 별 답변 개수 count
+        Map<Long, Long> answerCount = answers.stream().collect(Collectors.groupingBy(AnswerDto::getQuestionId, Collectors.counting()));
+
+        // 질문 별 답변 개수 매핑
+        for (QuestionWithAnswersDto question : questions) {
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
+            // 채택된 답변이 존재하므로 답변의 개수는 1 이상, 답변의 개수가 0인 것 제거
+            if(question.getAnswerCount() == 0L){
+                questions.remove(question);
+            }
+        }
+
+        return questions;
+    }
+
 
     // Question 엔티티를 QuestionDto로 변환
     private QuestionDto convertToDto(Question question) {

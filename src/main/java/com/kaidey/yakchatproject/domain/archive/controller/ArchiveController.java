@@ -54,6 +54,14 @@ public class ArchiveController {
         return ResponseEntity.ok(answers);
     }
 
+    // 채택 답변이 있는 질문 조회(최신순 5개)
+    @GetMapping("/my-questions/accepted")
+    public ResponseEntity<List<QuestionWithAnswersDto>> getMyAllQuestionsByAccepted(@RequestHeader("Authorization") String token){
+        Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
+        List<QuestionWithAnswersDto> questions = questionService.getQuestionsByUserIdByAcceptedByCreatedAtDesc(userId);
+        return ResponseEntity.ok(questions);
+    }
+
     // 스크랩
     @PostMapping("/{id}/scrap")
     public ResponseEntity<ScrapDto> scrap(@PathVariable("id") Long questionId
