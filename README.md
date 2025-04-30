@@ -123,11 +123,14 @@ sudo yum install java-17-amazon-corretto-devel -y
 
 ##  대표 이미지
 
-> (필요시 아래 항목들은 실제 이미지 경로로 대체)
 
-- ![홈 화면](https://github.com/user-attachments/assets/287ddc9f-d21a-419b-809e-a36517674087)
-- ![QnA 화면](https://github.com/user-attachments/assets/b43429b1-71b1-496f-9708-40f4708b5320)
-- ![답변 화면](https://github.com/user-attachments/assets/e1f0a786-4ea8-4ef2-98a9-92b5baa68f21)
-- ![아카이브 화면](https://github.com/user-attachments/assets/55047948-8a1c-46f0-9b20-baa886f9d706)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/488767d5-e33b-4c77-ae09-e11a1356a539" width="400"/>
+  <img src="https://github.com/user-attachments/assets/b9ecbd62-b744-4f69-ba96-60df92033b58" width="400"/>
+</p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b55565fb-ac5f-4b42-ada6-2ed58c6e062b" width="400"/>
+  <img src="https://github.com/user-attachments/assets/d329e455-a5f9-439b-bca9-46e9c6a0411f" width="400"/>
+</p>
 
 ---
