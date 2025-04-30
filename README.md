@@ -24,7 +24,7 @@ AI 기반 이미지 인증 시스템과 약학 특화 Q&A 시스템을 갖춘 �
 
 ##  ERD
 
-![ERD]() <!-- 실제 이미지 경로에 맞게 수정 -->
+![ERD](https://github.com/user-attachments/assets/9473342e-2af0-4643-883b-03ec9f7fd25b) <!-- 실제 이미지 경로에 맞게 수정 -->
 
 ---
 
@@ -125,7 +125,9 @@ sudo yum install java-17-amazon-corretto-devel -y
 
 > (필요시 아래 항목들은 실제 이미지 경로로 대체)
 
-- ![홈 화면]()
-- ![QnA 화면]()
+- ![홈 화면](https://github.com/user-attachments/assets/287ddc9f-d21a-419b-809e-a36517674087)
+- ![QnA 화면](https://github.com/user-attachments/assets/b43429b1-71b1-496f-9708-40f4708b5320)
+- ![답변 화면](https://github.com/user-attachments/assets/e1f0a786-4ea8-4ef2-98a9-92b5baa68f21)
+- ![아카이브 화면](https://github.com/user-attachments/assets/55047948-8a1c-46f0-9b20-baa886f9d706)
 
 ---
