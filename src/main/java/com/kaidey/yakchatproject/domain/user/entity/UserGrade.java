@@ -13,6 +13,7 @@ public class UserGrade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_grade_id")
     private Long id;
 
     @OneToOne
