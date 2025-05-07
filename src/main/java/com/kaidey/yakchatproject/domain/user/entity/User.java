@@ -22,6 +22,7 @@ public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -68,6 +69,7 @@ public class User implements UserDetails {
     private Set<RoleType> roles;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_authorities", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> authorities = new ArrayList<>();
 
     @Override
