@@ -22,6 +22,8 @@ import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -317,11 +319,12 @@ public class QuestionService {
         Map<Long, Long> answerCount = answers.stream().collect(Collectors.groupingBy(AnswerDto::getQuestionId, Collectors.counting()));
 
         // 질문 별 답변 개수 매핑
-        for (QuestionWithAnswersDto question : questions) {
+        Iterator<QuestionWithAnswersDto> iterator = questions.iterator();
+        while(iterator.hasNext()) {
+            QuestionWithAnswersDto question = iterator.next();
             question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
-            // 채택된 답변이 존재하므로 답변의 개수는 1 이상, 답변의 개수가 0인 것 제거
             if(question.getAnswerCount() == 0L){
-                questions.remove(question);
+                iterator.remove();
             }
         }
 

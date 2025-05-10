@@ -1,5 +1,8 @@
 package com.kaidey.yakchatproject.domain.archive.service;
 
+import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
+import com.kaidey.yakchatproject.domain.answer.entity.Answer;
+import com.kaidey.yakchatproject.domain.answer.repository.AnswerRepository;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
 import com.kaidey.yakchatproject.domain.question.repository.QuestionRepository;
@@ -21,20 +24,26 @@ public class ArchiveService {
 
     private final UserRepository userRepository;
     private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
     private final ScrapRepository scrapRepository;
     private final OffsetScrollPositionArgumentResolver offsetScrollPositionArgumentResolver;
 
     @Autowired
-    public ArchiveService(UserRepository userRepository, QuestionRepository questionRepository, ScrapRepository scrapRepository, OffsetScrollPositionArgumentResolver offsetScrollPositionArgumentResolver) {
+    public ArchiveService(UserRepository userRepository
+            , QuestionRepository questionRepository
+            , ScrapRepository scrapRepository
+            , AnswerRepository answerRepository
+            , OffsetScrollPositionArgumentResolver offsetScrollPositionArgumentResolver) {
         this.userRepository = userRepository;
         this.questionRepository = questionRepository;
+        this.answerRepository = answerRepository;
         this.scrapRepository = scrapRepository;
         this.offsetScrollPositionArgumentResolver = offsetScrollPositionArgumentResolver;
     }
 
-    // 스크랩
+    // 질문 스크랩
     @Transactional
-    public ScrapDto createScrap(ScrapDto scrapDto) {
+    public ScrapDto creatQuestionScrap(ScrapDto scrapDto) {
         Question question = questionRepository.findById(scrapDto.getQuestionId())
                 .orElseThrow(() -> new EntityNotFoundException("Question not found"));
 
@@ -43,7 +52,6 @@ public class ArchiveService {
             throw new IllegalStateException("이미 스크랩 되었습니다.");
         }
 
-        // 스크랩
         Scrap scrap = new Scrap();
         scrap.setQuestion(question);
         scrap.setScraperId(scrapDto.getScraperId());
@@ -51,27 +59,56 @@ public class ArchiveService {
         return convertToScrapDto(savedScrap);
     }
 
-    // 스크랩 보기
+    // 답변 스크랩
     @Transactional
-    public List<QuestionDto> getScrapsByUserId(Long scraperId){
+    public ScrapDto creatAnswerScrap(ScrapDto scrapDto) {
+        Answer answer = answerRepository.findById(scrapDto.getAnswerId())
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
+
+        Question question = questionRepository.findById(scrapDto.getQuestionId())
+                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+
+        // 이미 스크랩 되어 있는지 확인
+        if(scrapRepository.findByUserIdAndAnswerId(scrapDto.getScraperId(), scrapDto.getAnswerId()).size() > 0) {
+            throw new IllegalStateException("이미 스크랩 되었습니다.");
+        }
+
+
+        Scrap scrap = new Scrap();
+        scrap.setAnswer(answer);
+        scrap.setQuestion(question);
+        scrap.setScraperId(scrapDto.getScraperId());
+        Scrap savedScrap = scrapRepository.save(scrap);
+        return convertToScrapDto(savedScrap);
+    }
+
+    // 질문 스크랩 보기
+    @Transactional
+    public List<QuestionDto> getQuestionScraps(Long scraperId) {
         return scrapRepository.findByUserIdCreatedAtDesc(scraperId).stream()
                 .map(this::convertToQuestionDto)
                 .collect(Collectors.toList());
+    }
 
-
+    // 답변 스크랩 보기
+    @Transactional
+    public List<AnswerDto> getAnswerScraps(Long scraperId){
+        return scrapRepository.findByUserIdCreatedAtDesc2(scraperId).stream()
+                .map(this::convertToAnswerDto)
+                .collect(Collectors.toList());
     }
 
     private ScrapDto convertToScrapDto(Scrap scrap) {
         ScrapDto scrapDto = new ScrapDto();
         scrapDto.setId(scrap.getId());
-        scrapDto.setQuestionId(scrap.getQuestion().getId());
         scrapDto.setScraperId(scrap.getScraperId());
+        scrapDto.setQuestionId(scrap.getQuestion().getId());
+        scrapDto.setAnswerId(scrap.getAnswer() != null ? scrap.getAnswer().getId() : null);
         return scrapDto;
     }
 
     private QuestionDto convertToQuestionDto(Scrap scrap) {
         QuestionDto questionDto = new QuestionDto();
-
         questionDto.setId(scrap.getQuestion().getId());
         questionDto.setTitle(scrap.getQuestion().getTitle());
         questionDto.setContent(scrap.getQuestion().getContent());
@@ -84,5 +121,19 @@ public class ArchiveService {
         questionDto.setViewCount(scrap.getQuestion().getViewCount());
 
         return questionDto;
+    }
+
+    private AnswerDto convertToAnswerDto(Scrap scrap) {
+        AnswerDto answerDto = new AnswerDto();
+        answerDto.setId(scrap.getAnswer().getId());
+        answerDto.setContent(scrap.getAnswer().getContent());
+        answerDto.setQuestionId(scrap.getQuestion().getId());
+        answerDto.setUserId(scrap.getAnswer().getUser().getId());
+        answerDto.setUserName(scrap.getAnswer().getUser().getUsername());
+        answerDto.setCreatedAt(scrap.getAnswer().getCreatedAt());
+        answerDto.setModifiedAt(scrap.getAnswer().getModifiedAt());
+        answerDto.setLikeCount(scrap.getAnswer().getLikes());
+        answerDto.setAccepted(scrap.getAnswer().getIsAccepted());
+        return answerDto;
     }
 }
