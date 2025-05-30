@@ -11,4 +11,5 @@ public class ScrapDto {
     private Long id;
     private Long scraperId;
     private Long questionId;
+    private Long answerId;
 }

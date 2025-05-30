@@ -16,6 +16,7 @@ public class Image {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "image_id")
     private Long id;
 
     private String fileName; // 파일 이름
@@ -25,15 +26,15 @@ public class Image {
 
     private String mime; // MIME 타입
 
-    @ManyToOne // 다대일 관계
+    @ManyToOne(fetch = FetchType.LAZY) // 다대일 관계
     @JoinColumn(name = "question_id", nullable = true)
     private Question question; // 연관된 질문 (nullable)
 
-    @ManyToOne // 다대일 관계
+    @ManyToOne(fetch = FetchType.LAZY) // 다대일 관계
     @JoinColumn(name = "answer_id", nullable = true)
     private Answer answer; // 연관된 답변 (nullable)
 
-    @ManyToOne // 다대일 관계
+    @ManyToOne(fetch = FetchType.LAZY) // 다대일 관계
     @JoinColumn(name = "user_id", nullable = true)
     private User user; // 연관된 사용자 (nullable)
 

@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ public class Question {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "question_id")
     private Long id;
 
     @Column(nullable = false, length = 200)
@@ -33,11 +35,11 @@ public class Question {
 //    @Column(nullable = false)
 //    private Boolean isAnonymous; // Add this field
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -46,10 +48,12 @@ public class Question {
 
     private LocalDateTime modifiedAt;
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Answer> answers = new ArrayList<>();
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Image> images = new ArrayList<>();
 

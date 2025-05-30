@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,7 @@ public class Answer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "answer_id")
     private Long id;
 
     @Column(nullable = false)
@@ -28,11 +31,11 @@ public class Answer {
     @Column(nullable = false)
     private Boolean isAccepted = false; // 채택 여부
 
-    @ManyToOne // 다대일 관계
+    @ManyToOne(fetch = FetchType.LAZY) // 다대일 관계
     @JoinColumn(name = "question_id", nullable = false)
     private Question question; // 연관된 질문
 
-    @ManyToOne // 작성자와의 관계
+    @ManyToOne(fetch = FetchType.LAZY) // 작성자와의 관계
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // 답변 작성자
 
@@ -41,6 +44,7 @@ public class Answer {
 
     private LocalDateTime modifiedAt; // 수정일
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "answer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images = new ArrayList<>(); // 답변에 관련된 이미지들
 
@@ -54,4 +58,5 @@ public class Answer {
     public void incrementLikes() {
         this.likes++;
     }
+
 }
