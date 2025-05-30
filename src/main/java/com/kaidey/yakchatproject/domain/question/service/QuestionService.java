@@ -235,17 +235,22 @@ public class QuestionService {
             like.setUser(user);
             like.setQuestion(question);
             likeRepository.save(like);
+            question.incrementLikes();
         }
     }
 
     // 질문 좋아요 취소
     @Transactional
     public void unlikeQuestion(Long questionId, Long userId) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
         List<Like> likes = likeRepository.findByUserIdAndQuestionId(userId, questionId);
         if (likes.isEmpty()) {
             throw new EntityNotFoundException("Like not found");
         }
         likeRepository.deleteAll(likes);
+        question.decrementLikes();
+
     }
 
     @Transactional

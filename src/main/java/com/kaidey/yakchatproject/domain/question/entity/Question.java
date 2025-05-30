@@ -68,7 +68,11 @@ public class Question {
     public void incrementLikes() {
         this.likes++;
     }
-
+    public void decrementLikes() {
+        if(--this.likes < 0){
+            this.likes = 0;
+        }
+    }
     public void incrementViewCount() {
         this.viewCount++;
     }
