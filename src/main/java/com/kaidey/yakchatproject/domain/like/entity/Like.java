@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "`like`") // Escape the table name using backticks
+@Table(name = "likes") // Escape the table name using backticks
 @Getter
 @Setter
 @NoArgsConstructor

@@ -225,14 +225,19 @@ public class AnswerService {
             like.setUser(user); // Assuming User entity has a constructor with ID
             like.setAnswer(answer);
             likeRepository.save(like);
+            answer.incrementLikes();
         }
     }
 
     @Transactional
     public void unlikeAnswer(Long answerId, Long userId) {
+        Answer answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
         Like like = likeRepository.findByUserIdAndAnswerId(userId, answerId)
                 .orElseThrow(() -> new EntityNotFoundException("Like not found"));
         likeRepository.delete(like);
+        answer.decrementLikes();
+
     }
 
     @Transactional
