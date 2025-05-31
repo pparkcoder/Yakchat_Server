@@ -8,7 +8,6 @@ import com.kaidey.yakchatproject.domain.user.entity.RoleType;
 import com.kaidey.yakchatproject.domain.user.entity.GradeType;
 import com.kaidey.yakchatproject.domain.user.repository.UserGradeRepository;
 import com.kaidey.yakchatproject.domain.user.entity.UserGrade;
-import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,28 +38,16 @@ public class UserService {
     // 사용자 등록
     @Transactional
     public User registerUser(UserDto userDto) {
-        if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+        if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
         }
 
         User user = new User();
-        user.setEmail(userDto.getEmail());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        user.setUsername(userDto.getNickname());
-        user.setRealName(userDto.getRealName());
-        user.setUserType(userDto.getUserType());
+        user.setUsername(userDto.getUsername());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
+        user.setSchool(userDto.getSchool());
+        user.setGrade(userDto.getGrade());
         user.setAge(userDto.getAge());
-
-        // 사용자 유형에 따라 필드 분기
-        if (userDto.getUserType() == UserType.STUDENT) {
-            user.setSchool(userDto.getSchool());
-            user.setGrade(userDto.getGrade());
-            user.setDepartment(userDto.getDepartment());
-            user.setStudentId(userDto.getStudentId());
-        } else if (userDto.getUserType() == UserType.PROFESSIONAL) {
-            user.setLicenseNumber(userDto.getLicenseNumber());
-            user.setLicenseIssuedDate(userDto.getLicenseIssuedDate());
-        }
 
         Set<RoleType> roles = new HashSet<>();
         roles.add(RoleType.ROLE_USER); // 기본적으로 USER 역할 부여
@@ -76,20 +63,17 @@ public class UserService {
     // 사용자 로그인
     public Map<String, String> loginUser(UserDto userDto) {
         try {
-            User user = userRepository.findByEmail(userDto.getEmail())
-                    .orElseThrow(() -> new RuntimeException("Invalid email or password"));
-
-            if (!passwordEncoder.matches(userDto.getPassword(), user.getPassword())) {
-                throw new RuntimeException("Invalid email or password");
+            Optional<User> userOptional = userRepository.findByUsername(userDto.getUsername());
+            if (userOptional.isPresent() && passwordEncoder.matches(userDto.getPassword(), userOptional.get().getPassword())) {
+                String token = jwtTokenProvider.generateToken(userDto.getUsername(), userOptional.get().getId());
+                String refreshToken = jwtTokenProvider.generateRefreshToken(userDto.getUsername(), userOptional.get().getId());
+                Map<String, String> tokens = new HashMap<>();
+                tokens.put("access_token", token);
+                tokens.put("refresh_token", refreshToken);
+                return tokens;
+            } else {
+                throw new RuntimeException("Invalid username or password");
             }
-
-            String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
-            String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
-
-            Map<String, String> tokens = new HashMap<>();
-            tokens.put("access_token", token);
-            tokens.put("refresh_token", refreshToken);
-            return tokens;
         } catch (Exception e) {
             throw new RuntimeException("Error logging in user: " + e.getMessage());
         }
@@ -146,24 +130,17 @@ public class UserService {
 
     // 사용자 정보 업데이트
     public User updateUser(Long id, UserDto userDto) {
-        User user = getUserById(id);
-
-        user.setUsername(userDto.getNickname());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        user.setRealName(userDto.getRealName());
-        user.setAge(userDto.getAge());
-
-        if (user.getUserType() == UserType.STUDENT) {
+        try {
+            User user = getUserById(id);
+            user.setUsername(userDto.getUsername());
+            user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
             user.setSchool(userDto.getSchool());
             user.setGrade(userDto.getGrade());
-            user.setDepartment(userDto.getDepartment());
-            user.setStudentId(userDto.getStudentId());
-        } else if (user.getUserType() == UserType.PROFESSIONAL) {
-            user.setLicenseNumber(userDto.getLicenseNumber());
-            user.setLicenseIssuedDate(userDto.getLicenseIssuedDate());
+            user.setAge(userDto.getAge());
+            return userRepository.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Error updating user: " + e.getMessage());
         }
-
-        return userRepository.save(user);
     }
 
     // 사용자 삭제

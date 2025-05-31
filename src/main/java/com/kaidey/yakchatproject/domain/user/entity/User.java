@@ -1,6 +1,8 @@
 package com.kaidey.yakchatproject.domain.user.entity;
 
+import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
+import com.kaidey.yakchatproject.domain.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +12,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.util.*;
 
 @Entity
@@ -24,9 +25,6 @@ public class User implements UserDetails {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false)
-    private String email;
-
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
@@ -34,22 +32,10 @@ public class User implements UserDetails {
     private String password;
 
     @Column(nullable = false)
-    private String realName; // 공통 실명
-
-    // 사용자 유형
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserType userType;
-
-    //학생
     private String school;
-    private String grade;
-    private String studentId;
-    private String department;
 
-    // 전문가용 필드
-    private String licenseNumber;
-    private LocalDate licenseIssuedDate;
+    @Column(nullable = false)
+    private String grade; // 학교 학년 (등급과 별개)
 
     @Column(nullable = false)
     private Integer age;
@@ -68,6 +54,12 @@ public class User implements UserDetails {
     @BatchSize(size = 100)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Image> images = new ArrayList<>();
+
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Question> questions = new ArrayList<>();
+//
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Answer> answers = new ArrayList<>();
 
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -97,7 +89,6 @@ public class User implements UserDetails {
         return password;
     }
 
-
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -113,6 +104,10 @@ public class User implements UserDetails {
         return true;
     }
 
+//    @Override
+//    public String getName() {
+//        return username;
+//    }
 
     @Override
     public boolean isEnabled() {
