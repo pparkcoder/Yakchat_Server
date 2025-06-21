@@ -22,8 +22,6 @@ public class QuestionController {
     private final JwtTokenProvider jwtTokenProvider;
     private final ImageUtils imageUtils;
 
-
-
     @Autowired
     public QuestionController(QuestionService questionService, JwtTokenProvider jwtTokenProvider, ImageUtils imageUtils) {
         this.questionService = questionService;
@@ -165,8 +163,6 @@ public class QuestionController {
         questionService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
     }
-
-
 
     @GetMapping("/{id}/likeCount")
     public ResponseEntity<QuestionLikeStatusDto> getQuestionLikeCount(

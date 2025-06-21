@@ -10,7 +10,7 @@ import com.kaidey.yakchatproject.domain.scrap.dto.ScrapDto;
 import com.kaidey.yakchatproject.domain.scrap.entity.Scrap;
 import com.kaidey.yakchatproject.domain.scrap.repository.ScrapRepository;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
-import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
+import com.kaidey.yakchatproject.global.exception.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.web.OffsetScrollPositionArgumentResolver;
 import org.springframework.stereotype.Service;
@@ -45,11 +45,11 @@ public class ArchiveService {
     @Transactional
     public ScrapDto creatQuestionScrap(ScrapDto scrapDto) {
         Question question = questionRepository.findById(scrapDto.getQuestionId())
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
         // 이미 스크랩 되어 있는지 확인
         if(scrapRepository.findByUserIdAndQuestionId(scrapDto.getScraperId(), scrapDto.getQuestionId()).size() > 0) {
-            throw new IllegalStateException("이미 스크랩 되었습니다.");
+            throw new BusinessException(ArchiveErrorCode.ALREADY_SCRAP);
         }
 
         Scrap scrap = new Scrap();
@@ -63,14 +63,14 @@ public class ArchiveService {
     @Transactional
     public ScrapDto creatAnswerScrap(ScrapDto scrapDto) {
         Answer answer = answerRepository.findById(scrapDto.getAnswerId())
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
+                .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
 
         Question question = questionRepository.findById(scrapDto.getQuestionId())
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
         // 이미 스크랩 되어 있는지 확인
         if(scrapRepository.findByUserIdAndAnswerId(scrapDto.getScraperId(), scrapDto.getAnswerId()).size() > 0) {
-            throw new IllegalStateException("이미 스크랩 되었습니다.");
+            throw new BusinessException(ArchiveErrorCode.ALREADY_SCRAP);
         }
 
 
@@ -83,7 +83,7 @@ public class ArchiveService {
     }
 
     // 질문 스크랩 보기
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionScraps(Long scraperId) {
         return scrapRepository.findByUserIdCreatedAtDesc(scraperId).stream()
                 .map(this::convertToQuestionDto)
@@ -91,7 +91,7 @@ public class ArchiveService {
     }
 
     // 답변 스크랩 보기
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AnswerDto> getAnswerScraps(Long scraperId){
         return scrapRepository.findByUserIdCreatedAtDesc2(scraperId).stream()
                 .map(this::convertToAnswerDto)
