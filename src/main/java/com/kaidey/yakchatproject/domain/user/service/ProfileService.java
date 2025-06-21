@@ -2,8 +2,10 @@ package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
 import com.kaidey.yakchatproject.domain.user.entity.User;
+import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -19,44 +19,28 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
-        try {
-            User newUser = userService.registerUser(userDto);
-            return ResponseEntity.ok(newUser);
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("Username already exists")) {
-                return ResponseEntity.status(409).body("Username already exists");
-            }
-            return ResponseEntity.status(500).body("Error registering user: " + e.getMessage());
-        }
+        User newUser = userService.registerUser(userDto);
+        return ResponseEntity.ok(newUser);
     }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginUser(@RequestBody UserDto userDto) {
-        try {
-            Map<String, String> tokens = userService.loginUser(userDto);
-            return ResponseEntity.ok(tokens);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(403).body(null);
-        }
+        Map<String, String> tokens = userService.loginUser(userDto);
+        return ResponseEntity.ok(tokens);
     }
-
 
 
     @PostMapping("/refresh-token")
     public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
-        try {
-            String refreshToken = request.get("refreshToken");
-            Map<String, String> tokens = userService.refreshToken(refreshToken);
-            return ResponseEntity.ok(tokens);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(403).body(null);
-        }
+        String refreshToken = request.get("refreshToken");
+        Map<String, String> tokens = userService.refreshToken(refreshToken);
+        return ResponseEntity.ok(tokens);
     }
 
     @GetMapping("/check-username")
     public ResponseEntity<Boolean> checkUsernameExists(@RequestParam String username) {
-        boolean exists = userService.usernameExists(username);
-        return ResponseEntity.ok(exists);
+        userService.usernameExists(username);
+        return ResponseEntity.ok().body(null);
     }
 
     @GetMapping("/{id}")
