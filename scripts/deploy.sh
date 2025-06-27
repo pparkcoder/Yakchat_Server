@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 PROJECT_ROOT="/home/ubuntu/Yakchat_Server"
 JAR_FILE="$PROJECT_ROOT/YakchatProject-0.0.1-SNAPSHOT.jar"
 
