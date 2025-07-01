@@ -4,8 +4,8 @@ os: linux
 # 배포 파일 설정
 files:
   - source: / # 인스턴스에 복사할 디렉터리 경로
-    destination: /home/ec2-user/deploy # 인스턴스에서 파일이 복사되는 위치
-    overwrite: yes #복 사할 위치에 파일이 있는 경우 대체
+    destination: /home/ubuntu/Yakchat_Server_Test # 인스턴스에서 파일이 복사되는 위치
+    overwrite: yes #복사할 위치에 파일이 있는 경우 대체
 
 # files 섹션에서 복사한 파일에 대한 권한 설정
 permissions:
@@ -18,5 +18,5 @@ permissions:
 hooks:
   ApplicationStart: # 종료 및 새로운 애플리케이션을 실행
     - location: scripts/deploy.sh # hooks 에서 실행할 스크립트 위치
-      timeout: 120 # 스크립트 실행에 허용되는 최대 시간이며, 넘으면 배포 실패로 간주됨(optional)
-      # runas: ec2-user # 스크립트를 실행하는 사용자(optional)
+      timeout: 300 # 스크립트 실행에 허용되는 최대 시간이며, 넘으면 배포 실패로 간주됨(optional)
+      runas: ec2-user # 스크립트를 실행하는 사용자(optional)
