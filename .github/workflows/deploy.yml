@@ -35,7 +35,7 @@ jobs:
 
       # Gradle 파일 실행권한 설정
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x ./gradlew
         shell: bash
 
       # Gradle build (Test 제외)

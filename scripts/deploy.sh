@@ -1,31 +1,30 @@
-PROJECT_ROOT="/home/ubuntu/Yakchat_Server"
-JAR_FILE="$PROJECT_ROOT/YakchatProject-0.0.1-SNAPSHOT.jar"
+#!/bin/bash
+BUILD_JAR=$(ls /home/ubuntu/Yakchat_Server_Test/build/libs/*.jar)
+JAR_NAME=$(basename $BUILD_JAR)
+echo "> build 파일명: $JAR_NAME" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
 
-APP_LOG="$PROJECT_ROOT/application.log"
-ERROR_LOG="$PROJECT_ROOT/error.log"
-DEPLOY_LOG="$PROJECT_ROOT/deploy.log"
+echo "> build 파일 복사" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
+DEPLOY_PATH=/home/ubuntu/Yakchat_Server_Test/
+cp $BUILD_JAR $DEPLOY_PATH
 
-# 현재 구동 중인 애플리케이션 pid 확인
-CURRENT_PID=$(pgrep -f $JAR_FILE)
+echo "> application.yml 파일 복사" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
+YML_COPY_PATH = /home/ubuntu/Yakchat_Server/src/main/resources
+YML_PATH=/home/ubuntu/Yakchat_Server_Test/src/main
+cp $YML_COPY_PATH $YML_PATH
 
-# 프로세스가 켜져 있으면 종료
-if [ -z $CURRENT_PID ]; then
-  echo "$TIME_NOW > 현재 실행중인 애플리케이션이 없습니다" >> $DEPLOY_LOG
+echo "> 현재 실행중인 애플리케이션 pid 확인" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
+CURRENT_PID=$(pgrep -f .jar)
+
+if [ -z $CURRENT_PID ]
+then
+  echo "> 현재 구동중인 애플리케이션이 없으므로 종료하지 않습니다." >> /home/ubuntu/Yakchat_Server_Test/deploy.log
 else
-  echo "$TIME_NOW > 실행중인 $CURRENT_PID 애플리케이션 종료 " >> $DEPLOY_LOG
-  kill -15 $CURRENT_PID
+  echo "> kill -9 $CURRENT_PID"
+  kill -9 $CURRENT_PID
+  sleep 5
 fi
 
-TIME_NOW=$(date +%c)
-
-# build 파일 복사
-echo "$TIME_NOW > $JAR_FILE 파일 복사" >> $DEPLOY_LOG
-cp $PROJECT_ROOT/build/libs/*.jar $JAR_FILE
-
-# jar 파일 실행
-echo "$TIME_NOW > $JAR_FILE 파일 실행" >> $DEPLOY_LOG
-source ~/.bashrc
-nohup java -jar $JAR_FILE > $APP_LOG 2> $ERROR_LOG &
-
-CURRENT_PID=$(pgrep -f $JAR_FILE)
-echo "$TIME_NOW > 실행된 프로세스 아이디 $CURRENT_PID 입니다." >> $DEPLOY_LOG
+DEPLOY_JAR=$DEPLOY_PATH$JAR_NAME
+echo "> DEPLOY_JAR 배포"    >> /home/ubuntu/Yakchat_Server_Test/deploy.log
+source /home/ubuntu/.bashrc
+nohup java -jar $DEPLOY_JAR >> /home/ubuntu/Yakchat_Server_Test/deploy.log 2>/home/ubuntu/Yakchat_Server_Test/deploy_err.log &
