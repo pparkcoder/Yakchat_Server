@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 17
-          distribution: 'temurin'
+          distribution: 'corretto'
 
       # Gradle 파일 실행권한 설정
       - name: Grant execute permission for gradlew

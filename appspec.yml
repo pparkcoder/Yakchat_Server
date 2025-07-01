@@ -11,8 +11,8 @@ files:
 permissions:
   - object: / # 권한이 지정되는 파일 또는 디렉터리
     pattern: "**" # 매칭되는 패턴에만 권한 부여(optional)
-    owner: ec2-user # object 의 소유자(optional)
-    group: ec2-user # object 의 그룹 이름(optional)
+    # owner: ec2-user # object 의 소유자(optional)
+    # group: ec2-user # object 의 그룹 이름(optional)
 
 # 배포 이후에 실행할 일련의 라이프사이클
 hooks:

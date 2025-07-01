@@ -1,3 +1,4 @@
+
 #!/bin/bash
 BUILD_JAR=$(ls /home/ubuntu/Yakchat_Server_Test/build/libs/*.jar)
 JAR_NAME=$(basename $BUILD_JAR)
@@ -19,6 +20,7 @@ if [ -z $CURRENT_PID ]
 then
   echo "> 현재 구동중인 애플리케이션이 없으므로 종료하지 않습니다." >> /home/ubuntu/Yakchat_Server_Test/deploy.log
 else
+
   echo "> kill -9 $CURRENT_PID"
   kill -9 $CURRENT_PID
   sleep 5
