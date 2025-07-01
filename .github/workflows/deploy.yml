@@ -2,8 +2,6 @@ name: Yakchat Server CI/CD
 
 # dev-temp 브랜치에 push 또는 pull request가 되면 스크립트 실행
 on:
-  push:
-    branches: [ "dev-temp" ]
   pull_request:
     branches: [ "dev-temp" ]
 
