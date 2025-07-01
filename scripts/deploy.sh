@@ -11,7 +11,7 @@ cp $BUILD_JAR $DEPLOY_PATH
 echo "> application.yml 파일 복사" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
 YML_COPY_PATH = /home/ubuntu/Yakchat_Server/src/main/resources
 YML_PATH=/home/ubuntu/Yakchat_Server_Test/src/main
-cp $YML_COPY_PATH $YML_PATH
+cp -r $YML_COPY_PATH $YML_PATH
 
 echo "> 현재 실행중인 애플리케이션 pid 확인" >> /home/ubuntu/Yakchat_Server_Test/deploy.log
 CURRENT_PID=$(pgrep -f .jar)
