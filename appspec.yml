@@ -19,4 +19,4 @@ hooks:
   ApplicationStart: # 종료 및 새로운 애플리케이션을 실행
     - location: scripts/deploy.sh # hooks 에서 실행할 스크립트 위치
       timeout: 300 # 스크립트 실행에 허용되는 최대 시간이며, 넘으면 배포 실패로 간주됨(optional)
-      runas: ec2-user # 스크립트를 실행하는 사용자(optional)
+      # runas: ec2-user # 스크립트를 실행하는 사용자(optional)
