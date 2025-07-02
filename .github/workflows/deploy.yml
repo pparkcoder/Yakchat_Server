@@ -33,6 +33,13 @@ jobs:
           java-version: 17
           distribution: 'corretto'
 
+      - name: Make application.yml
+        run: |
+          mkdir -p ./src/main/resources
+          cd ./src/main/resources
+          touch ./application.yml
+          echo "${{ secrets.APPLICATION_DEV }}" > ./application.yml
+
       # Gradle 파일 실행권한 설정
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
