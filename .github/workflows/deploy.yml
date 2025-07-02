@@ -34,11 +34,10 @@ jobs:
           distribution: 'corretto'
 
       - name: Make application.yml
-        run: |
-          mkdir -p ./src/main/resources
-          cd ./src/main/resources
-          touch ./application.yml
-          echo "${{ secrets.APPLICATION_DEV }}" > ./application.yml
+      - run: mkdir -p ./src/main/resources
+      - run: cd ./src/main/resources
+      - run: touch ./application.yml
+      - run: echo "${{ secrets.APPLICATION_DEV }}" > ./application.yml
 
       # Gradle 파일 실행권한 설정
       - name: Grant execute permission for gradlew
