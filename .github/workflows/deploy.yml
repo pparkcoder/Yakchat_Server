@@ -35,10 +35,9 @@ jobs:
 
       - name: Make application.yml
         run: |
-          mkdir -p ./src/main/resources
-          cd ./src/main/resources
-          touch ./application.yml
-          echo "${{ secrets.APPLICATION_DEV }}" > ./application.yml
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_DEV }}" | base64 --decode > src/main/resources/application.yml
+          find src
 
       # Gradle 파일 실행권한 설정
       - name: Grant execute permission for gradlew
