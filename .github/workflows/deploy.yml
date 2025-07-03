@@ -1,11 +1,10 @@
 name: Yakchat Server CI/CD
 
-# dev-temp 브랜치에 push 또는 pull request가 되면 스크립트 실행
 on:
   push:
-    branches: [ "deploy_test" ]
+    branches: [ "dev-temp" ] # 해당 브랜치에 push 되면 스크립트 실행
   #pull_request:
-  #  branches: [ "dev-temp" ]
+  #  branches: [ "dev-temp" ] # 해당 브랜치에 pull request 되면 스크립트 실행
 
 env:
   # 버킷에 저장할 폴더 이름
@@ -36,7 +35,7 @@ jobs:
       - name: Make application.yml
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.APPLICATION_TEST }}" | base64 --decode > src/main/resources/application.yml
+          echo "${{ secrets.APPLICATION_DEV_WITH_AWS }}" | base64 --decode > src/main/resources/application.yml
           find src
 
       # Gradle 파일 실행권한 설정
