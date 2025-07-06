@@ -68,7 +68,6 @@ public class QuestionController {
     }
 
     // 질문 + 답변 조회 API 추가
-// QuestionController
     @GetMapping("/{id}/with-answers")
     public ResponseEntity<QuestionWithAnswersDto> getQuestionWithAnswers(
             @PathVariable Long id,
