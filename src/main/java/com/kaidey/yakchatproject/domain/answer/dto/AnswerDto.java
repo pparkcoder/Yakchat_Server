@@ -1,8 +1,11 @@
 package com.kaidey.yakchatproject.domain.answer.dto;
 
+import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
 
@@ -18,7 +21,7 @@ public class AnswerDto {
     private Long userId;
     private String userName;
     private Long questionId;
-    private Map<String, String> images;
+    private List<ImageDto> images;
     private LocalDateTime createdAt; //생성 날짜
     private LocalDateTime modifiedAt; //수정 날짜
     private Integer likeCount;

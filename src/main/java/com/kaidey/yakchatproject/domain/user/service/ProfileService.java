@@ -52,7 +52,8 @@ public class ProfileService {
             for (ImageDto imageDto : profileDto.getImages()) {
                 Image image = new Image();
                 image.setUrl(imageDto.getUrl());
-                image.setFileName(imageDto.getFileName());
+                image.setOriginalFileName(imageDto.getOriginalFileName());
+                image.setStoreFileName(imageDto.getStoreFileName());
                 image.setUser(user);
                 user.getImages().add(image);
             }
