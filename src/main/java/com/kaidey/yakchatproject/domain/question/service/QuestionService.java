@@ -3,6 +3,7 @@ package com.kaidey.yakchatproject.domain.question.service;
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.answer.repository.AnswerRepository;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
+import com.kaidey.yakchatproject.domain.image.service.ImageService;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
 import com.kaidey.yakchatproject.domain.like.entity.Like;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
@@ -22,7 +23,9 @@ import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,52 +42,55 @@ public class QuestionService {
     private final LikeRepository likeRepository;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
+    private final ImageService imageService;
 
     @Autowired
     public QuestionService(QuestionRepository questionRepository, SubjectRepository subjectRepository,
                            UserRepository userRepository, LikeRepository likeRepository,UserService userService,
-                           AnswerRepository answerRepository) {
+                           AnswerRepository answerRepository, ImageService imageService) {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.subjectRepository = subjectRepository;
         this.userRepository = userRepository;
         this.likeRepository = likeRepository;
         this.userService = userService;
+        this.imageService = imageService;
     }
 
     // 질문 생성
     @Transactional
-    public QuestionDto createQuestion(QuestionDto questionDto) {
-        // Subject와 User 찾기
-        Subject subject = subjectRepository.findById(questionDto.getSubjectId())
-                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
+    public QuestionDto createQuestion(QuestionDto questionDto, List<MultipartFile> images) {
+        try {
+            // Subject와 User 찾기
+            Subject subject = subjectRepository.findById(questionDto.getSubjectId())
+                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
 
-        User user = userRepository.findById(questionDto.getUserId())
-                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+            User user = userRepository.findById(questionDto.getUserId())
+                    .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        // Question 객체 생성 및 세팅
-        Question question = new Question();
-        question.setTitle(questionDto.getTitle());
-        question.setContent(questionDto.getContent());
+            // Question 객체 생성 및 세팅
+            Question question = new Question();
+            question.setTitle(questionDto.getTitle());
+            question.setContent(questionDto.getContent());
 //        question.setIsAnonymous(questionDto.getIsAnonymous());
-        question.setSubject(subject);
-        question.setUser(user);
-        userService.updateUserActivity(user, 1, 0, 0, 0, 0);
+            question.setSubject(subject);
+            question.setUser(user);
 
-        // 이미지 처리
-        if (questionDto.getImages() != null && !questionDto.getImages().isEmpty()) {
-            for (ImageDto imageDto : questionDto.getImages()) {
-                Image image = new Image();
-                image.setUrl(imageDto.getUrl());
-                image.setFileName(imageDto.getFileName());
-                image.setQuestion(question);
-                question.getImages().add(image);
+            // 등업을 위한 로직
+            userService.updateUserActivity(user, 1, 0, 0, 0, 0);
+
+            // 이미지가 있으면 미리 리스트에 추가
+            if (images != null && !images.isEmpty()) {
+                List<Image> imageList = imageService.saveQuestionImages(images, question);
+                question.setImages(imageList);
             }
-        }
 
-        // 질문 저장
-        Question savedQuestion = questionRepository.save(question);
-        return convertToDto(savedQuestion);
+            // 질문 저장
+            Question savedQuestion = questionRepository.save(question);
+            return convertToDto(savedQuestion);
+        } catch (IOException e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 
 
@@ -201,7 +207,8 @@ public class QuestionService {
             for (ImageDto imageDto : questionDto.getImages()) {
                 Image image = new Image();
                 image.setUrl(imageDto.getUrl());
-                image.setFileName(imageDto.getFileName());
+                image.setOriginalFileName(imageDto.getOriginalFileName());
+                image.setStoreFileName(imageDto.getStoreFileName());
                 image.setQuestion(question);
                 question.getImages().add(image);
             }
@@ -366,7 +373,7 @@ public class QuestionService {
 
         // 이미지 추가
         int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
-        answerDto.setImages(imageUtils.convertToImageMap(answer.getImages(), totalSteps));
+        answerDto.setImages(imageUtils.convertToImageDtos(answer.getImages()));
 
         return answerDto;
     }

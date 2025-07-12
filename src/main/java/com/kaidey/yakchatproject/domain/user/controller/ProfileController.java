@@ -63,11 +63,12 @@ public class ProfileController {
 
         if (images != null && !images.isEmpty()) {
             try {
-                List<Image> uploadedImages = imageService.saveImages(images, null); // Answer 없이 저장
+                List<Image> uploadedImages = imageService.saveAnswerImages(images, null); // Answer 없이 저장
                 List<ImageDto> imageDtos = new ArrayList<>();
                 for (Image image : uploadedImages) {
                     ImageDto imageDto = new ImageDto();
-                    imageDto.setFileName(image.getFileName());
+                    imageDto.setOriginalFileName(image.getOriginalFileName());
+                    imageDto.setStoreFileName(image.getStoreFileName());
                     imageDto.setUrl(image.getUrl());
                     imageDto.setMime(image.getMime());
                     imageDtos.add(imageDto);

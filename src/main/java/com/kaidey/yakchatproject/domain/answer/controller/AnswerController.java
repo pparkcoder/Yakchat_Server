@@ -43,7 +43,7 @@ public class AnswerController {
 
     // 답변 생성
     @PostMapping(consumes = {"multipart/form-data"})
-    public ResponseEntity<Map<String, Object>> createAnswer(
+    public ResponseEntity<AnswerDto> createAnswer(
             @RequestParam("content") String content,
             @RequestParam("questionId") Long questionId,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
@@ -53,14 +53,7 @@ public class AnswerController {
         AnswerDto answerDto = new AnswerDto(content, questionId, userId);
         AnswerDto newAnswer = answerService.createAnswer(answerDto, images);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("answerId", newAnswer.getId());
-        response.put("content", newAnswer.getContent());
-        response.put("questionId", newAnswer.getQuestionId());
-        response.put("userId", newAnswer.getUserId());
-        response.put("images", newAnswer.getImages());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(newAnswer);
     }
 
 

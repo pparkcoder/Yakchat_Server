@@ -79,17 +79,13 @@ public class AnswerService {
             answer.setUser(user);
 
             // 이미지가 있으면 미리 리스트에 추가
-            List<Image> imageList = new ArrayList<>();
             if (images != null && !images.isEmpty()) {
-                imageList = imageService.saveImages(images, answer);
+                List<Image> imageList = imageService.saveAnswerImages(images, answer);
                 answer.setImages(imageList);
             }
 
             // Answer 저장
             Answer savedAnswer = answerRepository.save(answer);
-
-            log.info("Saved answer ID: {}, Images count: {}", savedAnswer.getId(), savedAnswer.getImages() != null ? savedAnswer.getImages().size() : "null");
-
             return convertToDto(savedAnswer);
         } catch (IOException e) {
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
@@ -159,7 +155,7 @@ public class AnswerService {
 
             // 새로운 이미지 추가
             if (images != null && !images.isEmpty()) {
-                List<Image> savedImages = imageService.saveImages(images, answer);
+                List<Image> savedImages = imageService.saveAnswerImages(images, answer);
                 answer.getImages().addAll(savedImages);
             }
 
@@ -285,8 +281,8 @@ public class AnswerService {
         answerDto.setModifiedAt(answer.getModifiedAt());
         answerDto.setLikeCount(answer.getLikes());
         answerDto.setAccepted(answer.getIsAccepted());
-        int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
-        answerDto.setImages(imageUtils.convertToImageMap(answer.getImages(), totalSteps));
+        //int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
+        answerDto.setImages(imageUtils.convertToImageDtos(answer.getImages()));
 
         return answerDto;
     }
