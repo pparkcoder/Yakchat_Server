@@ -3,6 +3,9 @@ package com.kaidey.yakchatproject.domain.user.service;
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import com.kaidey.yakchatproject.global.exception.BusinessException;
+import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
+import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
 import com.kaidey.yakchatproject.domain.user.entity.RoleType;
 import com.kaidey.yakchatproject.domain.user.entity.GradeType;
@@ -26,7 +29,7 @@ public class UserService {
 
 
     public UserService(UserRepository userRepository, GradeService gradeService,
-                       PasswordEncoder passwordEncoder,JwtTokenProvider jwtTokenProvider,
+                       PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider,
                        UserGradeRepository userGradeRepository) {
         this.userRepository = userRepository;
         this.gradeService = gradeService;
@@ -38,10 +41,7 @@ public class UserService {
     // 사용자 등록
     @Transactional
     public User registerUser(UserDto userDto) {
-        if (userRepository.findByUsername(userDto.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
-        }
-
+        usernameExists(userDto.getUsername()); // 사용자 이름 중복 체크
         User user = new User();
         user.setUsername(userDto.getUsername());
         user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
@@ -62,31 +62,29 @@ public class UserService {
 
     // 사용자 로그인
     public Map<String, String> loginUser(UserDto userDto) {
-        try {
-            Optional<User> userOptional = userRepository.findByUsername(userDto.getUsername());
-            if (userOptional.isPresent() && passwordEncoder.matches(userDto.getPassword(), userOptional.get().getPassword())) {
-                String token = jwtTokenProvider.generateToken(userDto.getUsername(), userOptional.get().getId());
-                String refreshToken = jwtTokenProvider.generateRefreshToken(userDto.getUsername(), userOptional.get().getId());
-                Map<String, String> tokens = new HashMap<>();
-                tokens.put("access_token", token);
-                tokens.put("refresh_token", refreshToken);
-                return tokens;
-            } else {
-                throw new RuntimeException("Invalid username or password");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error logging in user: " + e.getMessage());
+        Optional<User> userOptional = userRepository.findByUsername(userDto.getUsername());
+        if (!userOptional.isPresent()) {
+            throw new BusinessException(UserErrorCode.NOT_FOUND_USER);
         }
+
+        if (!passwordEncoder.matches(userDto.getPassword(), userOptional.get().getPassword())) {
+            throw new BusinessException(UserErrorCode.NOT_MATCHES_PASSWORD);
+        }
+
+        String token = jwtTokenProvider.generateToken(userDto.getUsername(), userOptional.get().getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(userDto.getUsername(), userOptional.get().getId());
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("access_token", token);
+        tokens.put("refresh_token", refreshToken);
+        return tokens;
     }
-
-
 
 
     // 토큰 갱신
     public Map<String, String> refreshToken(String refreshToken) {
         // 리프레시 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
+            throw new BusinessException(UserErrorCode.INVAILD_REFRESH_TOKEN);
         }
 
         // 리프레시 토큰에서 사용자 정보 추출
@@ -106,29 +104,25 @@ public class UserService {
     }
 
     // 사용자 이름 중복 체크
-    public boolean usernameExists(String username) {
-        return userRepository.findByUsername(username).isPresent();
+    public void usernameExists(String username) {
+        Optional<User> findUserName = userRepository.findByUsername(username);
+        if (!findUserName.isEmpty()) {
+            throw new BusinessException(UserErrorCode.ALREAD_EXIST_NAME);
+        }
     }
 
     // 특정 사용자 조회
     public User getUserById(Long id) {
-        try {
-            return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        } catch (Exception e) {
-            throw new RuntimeException("Error retrieving user: " + e.getMessage());
-        }
+        return userRepository.findById(id).orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
     }
 
     // 모든 사용자 조회
     public List<User> getAllUsers() {
-        try {
-            return userRepository.findAll();
-        } catch (Exception e) {
-            throw new RuntimeException("Error retrieving all users: " + e.getMessage());
-        }
+        return userRepository.findAll();
     }
 
     // 사용자 정보 업데이트
+    @Transactional
     public User updateUser(Long id, UserDto userDto) {
         try {
             User user = getUserById(id);
@@ -139,47 +133,57 @@ public class UserService {
             user.setAge(userDto.getAge());
             return userRepository.save(user);
         } catch (Exception e) {
-            throw new RuntimeException("Error updating user: " + e.getMessage());
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
     }
 
     // 사용자 삭제
+    @Transactional
     public void deleteUser(Long id) {
         try {
             User user = getUserById(id);
             userGradeRepository.deleteById(user.getId()); // UserGrade도 함께 삭제
             userRepository.delete(user);
         } catch (Exception e) {
-            throw new RuntimeException("Error deleting user: " + e.getMessage());
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
     }
 
     @Transactional
     public void updateUserActivity(User user, int questions, int accepted, int likes, int purchases, int sales) {
-        UserGrade userGrade = userGradeRepository.findByUserId(user.getId())
-                .orElseGet(() -> createUserGrade(user)); // userGrade가 없으면 생성
+        try {
+            UserGrade userGrade = userGradeRepository.findByUserId(user.getId())
+                    .orElseGet(() -> createUserGrade(user)); // userGrade가 없으면 생성
 
-        userGrade.setQuestionCount(userGrade.getQuestionCount() + questions);
-        userGrade.setAcceptedCount(userGrade.getAcceptedCount() + accepted);
-        userGrade.setLikeCount(userGrade.getLikeCount() + likes);
-        userGrade.setPurchasedMaterialCount(userGrade.getPurchasedMaterialCount() + purchases);
-        userGrade.setSoldMaterialCount(userGrade.getSoldMaterialCount() + sales);
+            userGrade.setQuestionCount(userGrade.getQuestionCount() + questions);
+            userGrade.setAcceptedCount(userGrade.getAcceptedCount() + accepted);
+            userGrade.setLikeCount(userGrade.getLikeCount() + likes);
+            userGrade.setPurchasedMaterialCount(userGrade.getPurchasedMaterialCount() + purchases);
+            userGrade.setSoldMaterialCount(userGrade.getSoldMaterialCount() + sales);
 
-        // 등급 업데이트
-        gradeService.updateUserGrade(userGrade);
-        userGradeRepository.save(userGrade);
+            // 등급 업데이트
+            gradeService.updateUserGrade(userGrade);
+            userGradeRepository.save(userGrade);
+        } catch (Exception e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 
-    private UserGrade createUserGrade(User user) {
-        UserGrade newUserGrade = new UserGrade();
-        newUserGrade.setUser(user);
-        newUserGrade.setGrade(GradeType.GRAY);
-        newUserGrade.setQuestionCount(0);
-        newUserGrade.setAcceptedCount(0);
-        newUserGrade.setLikeCount(0);
-        newUserGrade.setPurchasedMaterialCount(0);
-        newUserGrade.setSoldMaterialCount(0);
+    @Transactional
+    public UserGrade createUserGrade(User user) {
+        try {
+            UserGrade newUserGrade = new UserGrade();
+            newUserGrade.setUser(user);
+            newUserGrade.setGrade(GradeType.GRAY);
+            newUserGrade.setQuestionCount(0);
+            newUserGrade.setAcceptedCount(0);
+            newUserGrade.setLikeCount(0);
+            newUserGrade.setPurchasedMaterialCount(0);
+            newUserGrade.setSoldMaterialCount(0);
 
-        return userGradeRepository.save(newUserGrade);
+            return userGradeRepository.save(newUserGrade);
+        } catch (Exception e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 }

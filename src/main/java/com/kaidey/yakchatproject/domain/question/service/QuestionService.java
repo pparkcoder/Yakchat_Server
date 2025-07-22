@@ -3,6 +3,7 @@ package com.kaidey.yakchatproject.domain.question.service;
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.answer.repository.AnswerRepository;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
+import com.kaidey.yakchatproject.domain.image.service.ImageService;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
 import com.kaidey.yakchatproject.domain.like.entity.Like;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
@@ -13,7 +14,7 @@ import com.kaidey.yakchatproject.domain.subject.repository.SubjectRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
-import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
+import com.kaidey.yakchatproject.global.exception.*;
 import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
@@ -22,7 +23,9 @@ import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,71 +42,74 @@ public class QuestionService {
     private final LikeRepository likeRepository;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
+    private final ImageService imageService;
 
     @Autowired
     public QuestionService(QuestionRepository questionRepository, SubjectRepository subjectRepository,
                            UserRepository userRepository, LikeRepository likeRepository,UserService userService,
-                           AnswerRepository answerRepository) {
+                           AnswerRepository answerRepository, ImageService imageService) {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.subjectRepository = subjectRepository;
         this.userRepository = userRepository;
         this.likeRepository = likeRepository;
         this.userService = userService;
+        this.imageService = imageService;
     }
 
     // 질문 생성
     @Transactional
-    public QuestionDto createQuestion(QuestionDto questionDto) {
-        // Subject와 User 찾기
-        Subject subject = subjectRepository.findById(questionDto.getSubjectId())
-                .orElseThrow(() -> new EntityNotFoundException("Subject not found"));
+    public QuestionDto createQuestion(QuestionDto questionDto, List<MultipartFile> images) {
+        try {
+            // Subject와 User 찾기
+            Subject subject = subjectRepository.findById(questionDto.getSubjectId())
+                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
 
-        User user = userRepository.findById(questionDto.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+            User user = userRepository.findById(questionDto.getUserId())
+                    .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        // Question 객체 생성 및 세팅
-        Question question = new Question();
-        question.setTitle(questionDto.getTitle());
-        question.setContent(questionDto.getContent());
+            // Question 객체 생성 및 세팅
+            Question question = new Question();
+            question.setTitle(questionDto.getTitle());
+            question.setContent(questionDto.getContent());
 //        question.setIsAnonymous(questionDto.getIsAnonymous());
-        question.setSubject(subject);
-        question.setUser(user);
-        userService.updateUserActivity(user, 1, 0, 0, 0, 0);
+            question.setSubject(subject);
+            question.setUser(user);
 
-        // 이미지 처리
-        if (questionDto.getImages() != null && !questionDto.getImages().isEmpty()) {
-            for (ImageDto imageDto : questionDto.getImages()) {
-                Image image = new Image();
-                image.setUrl(imageDto.getUrl());
-                image.setFileName(imageDto.getFileName());
-                image.setQuestion(question);
-                question.getImages().add(image);
+            // 등업을 위한 로직
+            userService.updateUserActivity(user, 1, 0, 0, 0, 0);
+
+            // 이미지가 있으면 미리 리스트에 추가
+            if (images != null && !images.isEmpty()) {
+                List<Image> imageList = imageService.saveQuestionImages(images, question);
+                question.setImages(imageList);
             }
-        }
 
-        // 질문 저장
-        Question savedQuestion = questionRepository.save(question);
-        return convertToDto(savedQuestion);
+            // 질문 저장
+            Question savedQuestion = questionRepository.save(question);
+            return convertToDto(savedQuestion);
+        } catch (IOException e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 
 
 
     // 특정 질문 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public QuestionDto getQuestionById(Long id) {
         Question question = questionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
         question.incrementViewCount(); // Increment view count
         questionRepository.save(question); //
         return convertToDto(question);
     }
 
     // 질문 + 답변 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public QuestionWithAnswersDto getQuestionWithAnswers(Long questionId, Long userId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
         // 질문 조회수 증가
         question.incrementViewCount();
@@ -130,7 +136,7 @@ public class QuestionService {
     }
 
     // 모든 질문 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getAllQuestions() {
         return questionRepository.findByOrderByCreatedAtDesc().stream()
                 .map(this::convertToDto)
@@ -138,7 +144,7 @@ public class QuestionService {
     }
 
     // 모든 질문 조회 (오래된 순)
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getAllQuestionsOldestFirst() {
         return questionRepository.findByOrderByCreatedAtAsc().stream()
                 .map(this::convertToDto)
@@ -147,7 +153,7 @@ public class QuestionService {
 
 
     // 과목 ID로 질문 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsBySubjectId(Long subjectId) {
         return questionRepository.findBySubjectIdOrderByCreatedAtDesc(subjectId).stream()
                 .map(this::convertToDto)
@@ -155,7 +161,7 @@ public class QuestionService {
     }
 
     // 과목 ID로 질문 조회 (오래된 순)
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsBySubjectIdOldestFirst(Long subjectId) {
         return questionRepository.findBySubjectIdOrderByCreatedAtAsc(subjectId).stream()
                 .map(this::convertToDto)
@@ -163,7 +169,7 @@ public class QuestionService {
     }
 
     // 최신 질문 조회 5개
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getLatestQuestions() {
         return questionRepository.findTop5ByOrderByCreatedAtDesc().stream()
                 .map(this::convertToDto)
@@ -171,25 +177,23 @@ public class QuestionService {
     }
 
     // 과목 ID로 최신 질문 조회 5개
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> getLatestQuestionsBySubjectId(Long subjectId) {
         return questionRepository.findTop5BySubjectIdOrderByCreatedAtDesc(subjectId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-
-
     // 질문 업데이트
     @Transactional
     public QuestionDto updateQuestion(Long id, QuestionDto questionDto) {
         // Question 찾기
         Question question = questionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
         // Subject 찾기
         Subject subject = subjectRepository.findById(questionDto.getSubjectId())
-                .orElseThrow(() -> new EntityNotFoundException("Subject not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
         question.setSubject(subject);
 
         // Question 세팅
@@ -203,7 +207,8 @@ public class QuestionService {
             for (ImageDto imageDto : questionDto.getImages()) {
                 Image image = new Image();
                 image.setUrl(imageDto.getUrl());
-                image.setFileName(imageDto.getFileName());
+                image.setOriginalFileName(imageDto.getOriginalFileName());
+                image.setStoreFileName(imageDto.getStoreFileName());
                 image.setQuestion(question);
                 question.getImages().add(image);
             }
@@ -219,7 +224,6 @@ public class QuestionService {
     // 질문 삭제
     @Transactional
     public void deleteQuestion(Long id) {
-        // 존재하지 않는 질문 ID일 경우 예외 발생
         questionRepository.deleteById(id);
     }
 
@@ -227,31 +231,34 @@ public class QuestionService {
     @Transactional
     public void likeQuestion(Long questionId, Long userId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
         if (likeRepository.findByUserIdAndQuestionId(userId, questionId).isEmpty()) {
             Like like = new Like();
             like.setUser(user);
             like.setQuestion(question);
             likeRepository.save(like);
+            question.incrementLikes();
         }
     }
 
     // 질문 좋아요 취소
     @Transactional
     public void unlikeQuestion(Long questionId, Long userId) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
         List<Like> likes = likeRepository.findByUserIdAndQuestionId(userId, questionId);
         if (likes.isEmpty()) {
-            throw new EntityNotFoundException("Like not found");
+            throw new BusinessException(CommonErrorCode.INVAILD_REQEUST);
         }
         likeRepository.deleteAll(likes);
+        question.decrementLikes();
     }
 
-    @Transactional
     public QuestionLikeStatusDto getQuestionLikeStatus(Long questionId, Long userId) {
         long likeCount = likeRepository.countByQuestionId(questionId);
-        boolean isLiked = false;
+        boolean isLiked = false; // 요청한 user의 해당 질문에 대한 좋아요 여부
 
         if (userId != null) {
             isLiked = !likeRepository.findByUserIdAndQuestionId(userId, questionId).isEmpty();
@@ -261,10 +268,10 @@ public class QuestionService {
     }
 
     // 질문 검색
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionDto> searchQuestions(String keyword) {
         if (keyword.length() > 100) {
-            throw new IllegalArgumentException("Keyword length must be 100 characters or less");
+            throw new BusinessException(QuestionErrorCode.INVAILD_QUESTION_KEYWORD);
         }
         return questionRepository.findByTitleContainingOrContentContaining(keyword, keyword).stream()
                 .map(this::convertToDto)
@@ -272,7 +279,7 @@ public class QuestionService {
     }
 
     // 회원 ID로 질문 조회 (최신 순)
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionWithAnswersDto> getQuestionsByUserIdByCreatedAtDesc(Long userId) {
 
         // 내가 작성한 질문 조회
@@ -299,7 +306,7 @@ public class QuestionService {
     }
 
     // 채택 답변 조회 (최신 순)
-    @Transactional
+    @Transactional(readOnly = true)
     public List<QuestionWithAnswersDto> getQuestionsByUserIdByAcceptedByCreatedAtDesc(Long userId) {
 
         // 내가 작성한 질문 조회
@@ -366,7 +373,7 @@ public class QuestionService {
 
         // 이미지 추가
         int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
-        answerDto.setImages(imageUtils.convertToImageMap(answer.getImages(), totalSteps));
+        answerDto.setImages(imageUtils.convertToImageDtos(answer.getImages()));
 
         return answerDto;
     }

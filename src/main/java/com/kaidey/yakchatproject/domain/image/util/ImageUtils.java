@@ -47,7 +47,7 @@ public class ImageUtils {
 
                 // ImageDto 객체 생성하여 URL과 파일 이름 설정
                 ImageDto imageDto = new ImageDto();
-                imageDto.setFileName(fileName);
+                imageDto.setStoreFileName(fileName);
                 imageDto.setUrl(imageUrl);
                 imageDto.setMime(mime);
 
@@ -70,7 +70,7 @@ public class ImageUtils {
                 String fileName = "image_" + UUID.randomUUID();
                 String imageUrl = saveBase64Image(base64Data, fileName, mime );
                 ImageDto imageDto = new ImageDto();
-                imageDto.setFileName(fileName);
+                imageDto.setStoreFileName(fileName);
                 imageDto.setUrl(imageUrl);
                 imageDto.setMime(mime);
                 imageDtos.add(imageDto);
@@ -118,24 +118,23 @@ public class ImageUtils {
     }
 
 
-    public Map<String, String> convertToImageMap(List<Image> images, int totalSteps) {
-        Map<String, String> imageMap = new LinkedHashMap<>();
-
-        //  모든 STEP을 `null`로 초기화하여 누락 방지
-        for (int i = 0; i < totalSteps; i++) {
-            imageMap.put(String.valueOf(i), null);
-        }
-        System.out.println("step:"+totalSteps);
-
-        //  실제 이미지가 있는 STEP에만 값을 덮어쓰기
-        for (Image image : images) {
-            if (image != null) {
-                imageMap.put(String.valueOf(image.getStepIndex()), image.getFileName());
-            }
-        }
-
-        return imageMap;
-    }
+//    public Map<String, String> convertToImageMap(List<Image> images, int totalSteps) {
+//        Map<String, String> imageMap = new LinkedHashMap<>();
+//
+//        //  모든 STEP을 `null`로 초기화하여 누락 방지
+//        for (int i = 0; i < totalSteps; i++) {
+//            imageMap.put(String.valueOf(i), null);
+//        }
+//
+//        //  실제 이미지가 있는 STEP에만 값을 덮어쓰기
+//        for (Image image : images) {
+//            if (image != null) {
+//                imageMap.put(String.valueOf(image.getStepIndex()), image.getFileName());
+//            }
+//        }
+//
+//        return imageMap;
+//    }
 
 
     public List<ImageDto> convertToImageDtos(List<Image> images) {
@@ -143,11 +142,13 @@ public class ImageUtils {
         for (Image image : images) {
             ImageDto imageDto = new ImageDto();
             imageDto.setId(image.getId());
-            imageDto.setFileName(image.getFileName());
+            imageDto.setOriginalFileName(image.getOriginalFileName());
+            imageDto.setStoreFileName(image.getStoreFileName());
             imageDto.setUrl(image.getUrl());
-            imageDto.setUserId(image.getUser() != null ? image.getUser().getId() : null);
-            imageDto.setAnswerId(image.getAnswer() != null ? image.getAnswer().getId() : null);
-            imageDto.setQuestionId(image.getQuestion() != null ? image.getQuestion().getId() : null);
+//            imageDto.setUserId(image.getUser() != null ? image.getUser().getId() : null);
+//            imageDto.setAnswerId(image.getAnswer() != null ? image.getAnswer().getId() : null);
+//            imageDto.setQuestionId(image.getQuestion() != null ? image.getQuestion().getId() : null);
+            imageDto.setMime(image.getMime());
             imageDtos.add(imageDto);
         }
         return imageDtos;

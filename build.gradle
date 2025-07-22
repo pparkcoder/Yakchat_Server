@@ -39,5 +39,12 @@ dependencies {
     testImplementation 'org.springframework:spring-test:5.3.13'
     implementation 'commons-io:commons-io:2.11.0'
     implementation 'commons-fileupload:commons-fileupload:1.5'
+
+    //AWS Parameter Store
+    implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0")
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 }
 
+jar {
+    enabled = false
+}

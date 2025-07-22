@@ -53,7 +53,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless 세션
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // 모든 요청 허용
+                        .requestMatchers("/api/auth/login","/api/auth/register",
+                                "/api/auth/check-username","/api/auth/refresh-token","/api/auth",
+                                "api/email/**").permitAll()  // 인증 없이 접근 가능
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/api/answers/**").authenticated()
+                        .requestMatchers("/api/questions/**").authenticated()
+                        .requestMatchers("/api/profile/**").authenticated()
+                        .requestMatchers("/api/auth/verify-token").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // ADMIN 권한 필요
+                        .anyRequest().authenticated() // 나머지는 인증 필요
                 );
 
         http.headers(headers -> headers
@@ -64,34 +73,6 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
-
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http.csrf(csrf -> csrf.disable()) // CSRF 비활성화
-//                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
-//                .sessionManagement(session -> session
-//                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless 세션
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/auth/login","/api/auth/register",
-//                                "/api/auth/check-username","/api/auth/refresh-token","/api/auth").permitAll()  // 인증 없이 접근 가능
-//                        .requestMatchers("/images/**").permitAll()
-//                        .requestMatchers("/api/answers/**").authenticated()
-//                        .requestMatchers("/api/questions/**").authenticated()
-//                        .requestMatchers("/api/profile/**").authenticated()
-//                        .requestMatchers("/api/auth/verify-token").authenticated()
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // ADMIN 권한 필요
-//                        .anyRequest().authenticated() // 나머지는 인증 필요
-//                );
-//
-//        http.headers(headers -> headers
-//                .frameOptions(frameOptions -> frameOptions.sameOrigin()) // 프레임 내 렌더링 허용
-//                .contentTypeOptions(contentTypeOptions -> contentTypeOptions.disable()) // nosniff 제거
-//        );
-//
-//        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//        return http.build();
-//    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

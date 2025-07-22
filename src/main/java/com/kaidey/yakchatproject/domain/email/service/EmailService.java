@@ -1,6 +1,8 @@
 package com.kaidey.yakchatproject.domain.email.service;
 
 import com.kaidey.yakchatproject.domain.email.dto.EmailDto;
+import com.kaidey.yakchatproject.global.exception.BusinessException;
+import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -29,7 +31,7 @@ public class EmailService {
     }
 
     // 숫자 6자리 인증 코드 생성
-    private String createdCode(){
+    private String createdCode() {
         int leftLimit = 48;
         int rightLimit = 57;
         int codeLength = 6;
@@ -69,24 +71,24 @@ public class EmailService {
     }
 
     // 인증 코드 전송
-    public void sendEmailCode(EmailDto emailDto) throws MessagingException {
-        String toEmail = emailDto.getEmail();
-        if (redisUtil.existData(toEmail)){
-            redisUtil.deleteData(toEmail);
+    public void sendEmailCode(EmailDto emailDto) {
+        try {
+            String toEmail = emailDto.getEmail();
+            if (redisUtil.existData(toEmail)) {
+                redisUtil.deleteData(toEmail);
+            }
+            mailSender.send(createEmailForm(toEmail));
+        } catch (MessagingException e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
-
-        mailSender.send(createEmailForm(toEmail));
     }
-    
+
     // 인증 코드 검증
-    public Boolean verifyEmailCode(EmailDto emailDto){
+    public void verifyEmailCode(EmailDto emailDto) {
         String userEmail = emailDto.getEmail();
         String userCode = emailDto.getCode();
-
-        if(userCode == null || !userCode.equals(redisUtil.getData(userEmail))){
-            return false;
+        if (userCode == null || !userCode.equals(redisUtil.getData(userEmail))) {
+            throw new BusinessException(CommonErrorCode.INVALID_EMAIL_CODE);
         }
-
-        return true;
     }
 }

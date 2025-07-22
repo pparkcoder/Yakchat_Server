@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.apache.tika.mime.MimeTypeException;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import java.util.List;
@@ -21,8 +22,6 @@ public class QuestionController {
     private final QuestionService questionService;
     private final JwtTokenProvider jwtTokenProvider;
     private final ImageUtils imageUtils;
-
-
 
     @Autowired
     public QuestionController(QuestionService questionService, JwtTokenProvider jwtTokenProvider, ImageUtils imageUtils) {
@@ -37,7 +36,7 @@ public class QuestionController {
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam("subjectId") Long subjectId,
-            @RequestParam(value = "images", required = false) List<String> images,  // List<String>으로 변경
+            @RequestParam(value = "images", required = false) List<MultipartFile> images,  // List<String>으로 변경
             @RequestHeader("Authorization") String token) {
 
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
@@ -46,18 +45,7 @@ public class QuestionController {
         questionDto.setContent(content);
         questionDto.setSubjectId(subjectId);
         questionDto.setUserId(userId);
-
-        // 이미지 처리 로직을 Service로 위임
-        if (images != null && !images.isEmpty()) {
-            try {
-                questionDto.setImages(imageUtils.processImages(images));
-            } catch (MimeTypeException | IllegalArgumentException e) {
-                return ResponseEntity.status(e instanceof MimeTypeException ? 500 : 400).body(null);
-            }
-        }
-
-        // 서비스에서 질문을 생성
-        QuestionDto newQuestion = questionService.createQuestion(questionDto);
+        QuestionDto newQuestion = questionService.createQuestion(questionDto, images);
         return ResponseEntity.ok(newQuestion);
     }
 
@@ -70,7 +58,6 @@ public class QuestionController {
     }
 
     // 질문 + 답변 조회 API 추가
-// QuestionController
     @GetMapping("/{id}/with-answers")
     public ResponseEntity<QuestionWithAnswersDto> getQuestionWithAnswers(
             @PathVariable Long id,
@@ -165,8 +152,6 @@ public class QuestionController {
         questionService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
     }
-
-
 
     @GetMapping("/{id}/likeCount")
     public ResponseEntity<QuestionLikeStatusDto> getQuestionLikeCount(
