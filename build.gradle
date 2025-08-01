@@ -43,6 +43,10 @@ dependencies {
     //AWS Parameter Store
     implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0")
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
+
+    // AWS S3
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+    implementation 'io.awspring.cloud:spring-cloud-starter-aws-secrets-manager-config:2.4.4'
 }
 
 jar {
