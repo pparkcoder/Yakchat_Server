@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless 세션
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login","/api/auth/register",
-                                "/api/auth/check-username","/api/auth/refresh-token","/api/auth","api/s3/upload","api/s3/download").permitAll()  // 인증 없이 접근 가능
+                                "/api/auth/check-username","/api/auth/refresh-token","/api/auth","/api/s3/upload","/api/s3/download").permitAll()  // 인증 없이 접근 가능
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers("/api/answers/**").authenticated()
                         .requestMatchers("/api/questions/**").authenticated()
