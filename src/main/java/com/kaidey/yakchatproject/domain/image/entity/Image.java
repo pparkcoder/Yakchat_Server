@@ -23,6 +23,8 @@ public class Image {
 
     private String storeFileName; // 저장소에 저장된 파일 명
 
+    private String preSignedUrlKey;
+
     @Column(nullable = false)
     private String url;
 
