@@ -25,6 +25,7 @@ public class S3ServiceV2 {
     private String region;
 
     public URL generatePresignedUrl(String objectKey, HttpMethod method) {
+        // 이 과정이 없으면 오류
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withRegion(region)
                 .build();
@@ -37,23 +38,33 @@ public class S3ServiceV2 {
         return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
-    // 예시: PutObject 요청에 대한 Presigned URL 생성
-    public List<S3Dto> generatePresignedPutUrl(List<String> files, Long userId) {
+    // PutObject 요청에 대한 Presigned URL 생성
+    public List<S3Dto> generatePresignedPutUrl(List<String> files, Long userId, String type) {
         List<S3Dto> result = new ArrayList<>();
         for (String file : files) {
-            String path = "image/" +  userId + "/" + file;
+            String path = type + "/" +  userId + "/" + file;
             URL url = generatePresignedUrl(path, HttpMethod.PUT);
             result.add(new S3Dto(path, url.toExternalForm()));
         }
         return result;
     }
 
-    // 예시: GetObject 요청에 대한 Presigned URL 생성
-    public List<S3Dto> generatePresignedGetUrl(List<String> files) {
+    // GetObject 요청에 대한 Presigned URL 생성
+    public List<S3Dto> generatePresignedGetUrl(List<String> keys) {
         List<S3Dto> result = new ArrayList<>();
-        for (String file : files) {
-            URL url = generatePresignedUrl(file, HttpMethod.GET);
-            result.add(new S3Dto(file, url.toExternalForm()));
+        for (String key : keys) {
+            URL url = generatePresignedUrl(key, HttpMethod.GET);
+            result.add(new S3Dto(key, url.toExternalForm()));
+        }
+        return result;
+    }
+
+    // DeleteObject 요청에 대한 Presigned URL 생성
+    public List<S3Dto> generatePresignedDeleteUrl(List<String> keys) {
+        List<S3Dto> result = new ArrayList<>();
+        for (String key : keys) {
+            URL url = generatePresignedUrl(key, HttpMethod.DELETE);
+            result.add(new S3Dto(key, url.toExternalForm()));
         }
         return result;
     }
