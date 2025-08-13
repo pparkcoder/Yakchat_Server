@@ -42,8 +42,11 @@ public class UserService {
     @Transactional
     public User registerUser(UserDto userDto) {
         usernameExists(userDto.getUsername()); // 사용자 이름 중복 체크
+        emailExists(userDto.getEmail());
+
         User user = new User();
         user.setUsername(userDto.getUsername());
+        user.setEmail(userDto.getEmail());
         user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
         user.setSchool(userDto.getSchool());
         user.setGrade(userDto.getGrade());
@@ -62,17 +65,16 @@ public class UserService {
 
     // 사용자 로그인
     public Map<String, String> loginUser(UserDto userDto) {
-        Optional<User> userOptional = userRepository.findByUsername(userDto.getUsername());
-        if (!userOptional.isPresent()) {
-            throw new BusinessException(UserErrorCode.NOT_FOUND_USER);
-        }
+        User user = userRepository.findByEmail(userDto.getEmail())
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        if (!passwordEncoder.matches(userDto.getPassword(), userOptional.get().getPassword())) {
+        if (!passwordEncoder.matches(userDto.getPassword(), user.getPassword())) {
             throw new BusinessException(UserErrorCode.NOT_MATCHES_PASSWORD);
         }
 
-        String token = jwtTokenProvider.generateToken(userDto.getUsername(), userOptional.get().getId());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(userDto.getUsername(), userOptional.get().getId());
+
+        String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
         Map<String, String> tokens = new HashMap<>();
         tokens.put("access_token", token);
         tokens.put("refresh_token", refreshToken);
@@ -108,6 +110,12 @@ public class UserService {
         Optional<User> findUserName = userRepository.findByUsername(username);
         if (!findUserName.isEmpty()) {
             throw new BusinessException(UserErrorCode.ALREAD_EXIST_NAME);
+        }
+    }
+
+    public void emailExists(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new BusinessException(UserErrorCode.ALREADY_EXIST_EMAIL);
         }
     }
 

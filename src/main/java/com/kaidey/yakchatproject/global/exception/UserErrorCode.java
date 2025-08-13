@@ -28,4 +28,8 @@ public class UserErrorCode extends ErrorCode{
 
     public static final UserErrorCode NOT_MATCHES_PASSWORD = new UserErrorCode
             (HttpStatus.BAD_REQUEST, "NOT_MATCHES_PASSWORD","비밀번호가 일치하지 않습니다.");
+
+    public static final UserErrorCode ALREADY_EXIST_EMAIL = new UserErrorCode(
+            HttpStatus.CONFLICT, "ALREADY_EXIST_EMAIL", "이미 사용 중인 이메일입니다."
+    );
 }

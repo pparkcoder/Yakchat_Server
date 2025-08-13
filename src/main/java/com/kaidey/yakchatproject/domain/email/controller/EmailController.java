@@ -21,8 +21,12 @@ public class EmailController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendAuthCode(@RequestBody @Valid EmailDto emailDto) {
+    public ResponseEntity<String>  sendAuthCode(
+            @RequestBody @Valid EmailDto emailDto,
+            @RequestHeader(value = "Temp-Token", required = false) String tempToken) {
+
         emailService.sendEmailCode(emailDto);
+        emailService.sendEmailCodeWithTempToken(emailDto, tempToken);
         return ResponseEntity.ok("인증번호가 발송되었습니다.");
     }
 

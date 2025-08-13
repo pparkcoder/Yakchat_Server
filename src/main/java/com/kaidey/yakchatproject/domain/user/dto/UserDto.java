@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class UserDto {
     private Long id;
     private String username; // 아이디
+    private String email; // 이메일
     private String password; // 비밀번호 (암호화된 형태로 저장될 것)
     private String school;
     private String grade;

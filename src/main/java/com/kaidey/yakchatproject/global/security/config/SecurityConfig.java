@@ -56,6 +56,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login","/api/auth/register",
                                 "/api/auth/check-username","/api/auth/refresh-token","/api/auth","/api/s3/upload","/api/s3/download").permitAll()  // 인증 없이 접근 가능
                         .requestMatchers("/images/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/ocr-verify","/api/auth/ocr-status/**",
+                                "/api/auth/send-email-with-ocr","/api/auth/register-complete"
+                        ).permitAll()
                         .requestMatchers("/api/answers/**").authenticated()
                         .requestMatchers("/api/questions/**").authenticated()
                         .requestMatchers("/api/profile/**").authenticated()

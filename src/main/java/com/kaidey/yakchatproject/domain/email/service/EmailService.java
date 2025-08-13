@@ -4,6 +4,7 @@ import com.kaidey.yakchatproject.domain.email.dto.EmailDto;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
+import com.kaidey.yakchatproject.domain.auth.service.OcrVerificationService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -20,14 +22,19 @@ public class EmailService {
 
     private final RedisUtil redisUtil;
     private final JavaMailSender mailSender;
+    private final OcrVerificationService ocrVerificationService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${redis.ttl.email-code}")      // 3분
+    private long emailCodeTtlSeconds;
+
     @Autowired
-    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender) {
+    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender, OcrVerificationService ocrVerificationService) {
         this.redisUtil = redisUtil;
         this.mailSender = mailSender;
+        this.ocrVerificationService = ocrVerificationService;
     }
 
     // 숫자 6자리 인증 코드 생성
@@ -44,6 +51,20 @@ public class EmailService {
 
     }
 
+    public void sendEmailCodeWithTempToken(EmailDto emailDto, String tempToken) {
+        if (tempToken != null && !tempToken.isBlank()) {
+            Map<String, Object> ocrData = ocrVerificationService.getOcrDataFromRedis(tempToken);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("fields");
+            String extractedName = (fields == null) ? null : (String) fields.get("name");
+            if (extractedName != null && !extractedName.isBlank()) {
+                // 개인화 이름을 3분 TTL로 캐시 (Email 본문에서 자동 사용)
+                redisUtil.setDataExpire("email:displayname:" + emailDto.getEmail(),
+                        extractedName, emailCodeTtlSeconds);
+            }
+        }
+        sendEmailCode(emailDto);
+    }
 
     // 이메일 내용 및 전송 설정
     private MimeMessage createEmailForm(String toEmail) throws MessagingException {
@@ -69,6 +90,8 @@ public class EmailService {
 
         return message;
     }
+
+
 
     // 인증 코드 전송
     public void sendEmailCode(EmailDto emailDto) {
