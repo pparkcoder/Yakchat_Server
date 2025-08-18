@@ -145,7 +145,7 @@ public class OcrVerificationService {
             redisUtil.setDataExpire(key, dataJson, ttl);
             return tempToken;
         } catch (Exception e) {
-            // 저장/직렬화 실패는 '서비스 이용 불가'로 처리하는 게 의미상 맞음
+            log.error("Failed to save OCR temp data to Redis: key={}, ttl={}", tempToken, ocrTempTtl, e);
             throw new BusinessException(OcrErrorCode.OCR_SERVICE_UNAVAILABLE.toErrorCode());
         }
     }
@@ -189,7 +189,7 @@ public class OcrVerificationService {
 
     private void validateDocumentType(String documentType) {
         if (!"student".equals(documentType) && !"professional".equals(documentType))
-            throw new BusinessException(OcrErrorCode.TEMP_TOKEN_NOT_FOUND.toErrorCode());
+            throw new BusinessException(OcrErrorCode.INVALID_DOCUMENT_FORMAT.toErrorCode());
     }
 
     private void validateImageFile(MultipartFile file) {

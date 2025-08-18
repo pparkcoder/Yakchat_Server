@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/ocr-verify","/api/auth/ocr-status/**",
-                                "/api/auth/send-email-with-ocr","/api/auth/register-complete"
+                                "/api/email/**","/api/auth/register-complete"
                         ).permitAll()
                         .requestMatchers("/api/answers/**").authenticated()
                         .requestMatchers("/api/questions/**").authenticated()
