@@ -54,7 +54,7 @@ public class Question {
     private List<Answer> answers = new ArrayList<>();
 
     @BatchSize(size = 100)
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images = new ArrayList<>();
 
     private int likes = 0;
@@ -62,9 +62,6 @@ public class Question {
     @Column(nullable = false)
     private int viewCount = 0;
 
-    public void updateModifiedAt() {
-        this.modifiedAt = LocalDateTime.now();
-    }
     public void incrementLikes() {
         this.likes++;
     }
@@ -75,5 +72,28 @@ public class Question {
     }
     public void incrementViewCount() {
         this.viewCount++;
+    }
+
+    public void update(String title, String content, Subject subject){
+        this.title = title;
+        this.content = content;
+        this.subject = subject;
+        this.modifiedAt = LocalDateTime.now();
+    }
+
+    public void updateWithImage(String title, String content, Subject subject, List<Image> images){
+        this.title = title;
+        this.content = content;
+        this.subject = subject;
+        this.modifiedAt = LocalDateTime.now();
+
+        for (Image image : this.images) {
+            image.setQuestion(null);
+        }
+        this.images.clear();
+        for (Image image : images) {
+            this.images.add(image);
+            image.setQuestion(this);
+        }
     }
 }

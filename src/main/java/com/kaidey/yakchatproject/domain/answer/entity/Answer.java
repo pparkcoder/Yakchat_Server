@@ -50,11 +50,6 @@ public class Answer {
 
     private int likes = 0; // 좋아요 수
 
-    // 수정일 업데이트 메서드
-    public void updateModifiedAt() {
-        this.modifiedAt = LocalDateTime.now();
-    }
-
     public void incrementLikes() {
         this.likes++;
     }
@@ -62,6 +57,27 @@ public class Answer {
     public void decrementLikes() {
         if(--this.likes < 0){
             this.likes = 0;
+        }
+    }
+
+    public void update(String content, Question question){
+        this.content = content;
+        this.question = question;
+        this.modifiedAt = LocalDateTime.now();
+    }
+
+    public void updateWithImage(String content, Question question, List<Image> images){
+        this.content = content;
+        this.question = question;
+        this.modifiedAt = LocalDateTime.now();
+
+        for (Image image : this.images) {
+            image.setAnswer(null);
+        }
+        this.images.clear();
+        for (Image image : images) {
+            this.images.add(image);
+            image.setAnswer(this);
         }
     }
 }

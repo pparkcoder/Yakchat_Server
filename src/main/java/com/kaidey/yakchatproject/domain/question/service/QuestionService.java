@@ -1,31 +1,31 @@
 package com.kaidey.yakchatproject.domain.question.service;
 
+import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.answer.repository.AnswerRepository;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.service.ImageService;
-import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
+import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
 import com.kaidey.yakchatproject.domain.like.entity.Like;
-import com.kaidey.yakchatproject.domain.question.entity.Question;
 import com.kaidey.yakchatproject.domain.like.repository.LikeRepository;
+import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
+import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
+import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
+import com.kaidey.yakchatproject.domain.question.entity.Question;
 import com.kaidey.yakchatproject.domain.question.repository.QuestionRepository;
 import com.kaidey.yakchatproject.domain.subject.entity.Subject;
 import com.kaidey.yakchatproject.domain.subject.repository.SubjectRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
-import com.kaidey.yakchatproject.global.exception.*;
-import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
-import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
-import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
-import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
-import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
+import com.kaidey.yakchatproject.global.exception.BusinessException;
+import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
+import com.kaidey.yakchatproject.global.exception.QuestionErrorCode;
+import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +46,8 @@ public class QuestionService {
 
     @Autowired
     public QuestionService(QuestionRepository questionRepository, SubjectRepository subjectRepository,
-                           UserRepository userRepository, LikeRepository likeRepository,UserService userService,
-                           AnswerRepository answerRepository, ImageService imageService) {
+                             UserRepository userRepository, LikeRepository likeRepository, UserService userService,
+                             AnswerRepository answerRepository, ImageService imageService) {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.subjectRepository = subjectRepository;
@@ -59,40 +59,32 @@ public class QuestionService {
 
     // 질문 생성
     @Transactional
-    public QuestionDto createQuestion(QuestionDto questionDto, List<MultipartFile> images) {
-        try {
-            // Subject와 User 찾기
-            Subject subject = subjectRepository.findById(questionDto.getSubjectId())
-                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
+    public QuestionDto createQuestion(QuestionDto questionDto, List<String> keys) {
+        Subject subject = subjectRepository.findById(questionDto.getSubjectId())
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
 
-            User user = userRepository.findById(questionDto.getUserId())
-                    .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+        User user = userRepository.findById(questionDto.getUserId())
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-            // Question 객체 생성 및 세팅
-            Question question = new Question();
-            question.setTitle(questionDto.getTitle());
-            question.setContent(questionDto.getContent());
-//        question.setIsAnonymous(questionDto.getIsAnonymous());
-            question.setSubject(subject);
-            question.setUser(user);
+        Question question = new Question();
+        question.setTitle(questionDto.getTitle());
+        question.setContent(questionDto.getContent());
+        question.setSubject(subject);
+        question.setUser(user);
 
-            // 등업을 위한 로직
-            userService.updateUserActivity(user, 1, 0, 0, 0, 0);
+        // 등업을 위한 로직
+        userService.updateUserActivity(user, 1, 0, 0, 0, 0);
 
-            // 이미지가 있으면 미리 리스트에 추가
-            if (images != null && !images.isEmpty()) {
-                List<Image> imageList = imageService.saveQuestionImages(images, question);
-                question.setImages(imageList);
-            }
-
-            // 질문 저장
-            Question savedQuestion = questionRepository.save(question);
-            return convertToDto(savedQuestion);
-        } catch (IOException e) {
-            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        // 이미지가 있으면 미리 리스트에 추가
+        if (keys != null && !keys.isEmpty()) {
+            List<Image> imageList = imageService.saveQuestionImages(keys, question);
+            question.setImages(imageList);
         }
-    }
 
+        Question savedQuestion = questionRepository.save(question);
+
+        return convertToDto(savedQuestion);
+    }
 
 
     // 특정 질문 조회
@@ -186,40 +178,30 @@ public class QuestionService {
 
     // 질문 업데이트
     @Transactional
-    public QuestionDto updateQuestion(Long id, QuestionDto questionDto) {
-        // Question 찾기
-        Question question = questionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
+    public QuestionDto updateQuestion(Long id, QuestionDto questionDto, List<String> keys) {
+        try {
+            // Question 찾기
+            Question question = questionRepository.findById(id)
+                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
-        // Subject 찾기
-        Subject subject = subjectRepository.findById(questionDto.getSubjectId())
-                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
-        question.setSubject(subject);
+            // Subject 찾기
+            Subject subject = subjectRepository.findById(questionDto.getSubjectId())
+                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
 
-        // Question 세팅
-        question.setTitle(questionDto.getTitle());
-        question.setContent(questionDto.getContent());
-//        question.setIsAnonymous(questionDto.getIsAnonymous());
-
-        // 이미지 처리
-        if (questionDto.getImages() != null && !questionDto.getImages().isEmpty()) {
-            question.getImages().clear(); // 기존 이미지를 지우고 새 이미지로 업데이트
-            for (ImageDto imageDto : questionDto.getImages()) {
-                Image image = new Image();
-                image.setUrl(imageDto.getUrl());
-                image.setOriginalFileName(imageDto.getOriginalFileName());
-                image.setStoreFileName(imageDto.getStoreFileName());
-                image.setQuestion(question);
-                question.getImages().add(image);
+            // 질문 업데이트
+            if (keys != null && !keys.isEmpty()) { // 이미지가 추가
+                List<Image> updateImages = imageService.saveQuestionImages(keys, question);
+                question.updateWithImage(questionDto.getTitle(), questionDto.getContent(), subject, updateImages);
+            } else {
+                question.update(questionDto.getTitle(), questionDto.getContent(), subject);
             }
+
+            return convertToDto(question);
+
+        } catch (Exception e) {
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
-
-        // 질문 저장
-        Question updatedQuestion = questionRepository.save(question);
-        return convertToDto(updatedQuestion);
     }
-
-
 
     // 질문 삭제
     @Transactional
@@ -300,7 +282,7 @@ public class QuestionService {
 
         // 질문 별 답변 개수 매핑
         for (QuestionWithAnswersDto question : questions) {
-            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(), 0L).intValue());
         }
         return questions;
     }
@@ -327,10 +309,10 @@ public class QuestionService {
 
         // 질문 별 답변 개수 매핑
         Iterator<QuestionWithAnswersDto> iterator = questions.iterator();
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             QuestionWithAnswersDto question = iterator.next();
-            question.setAnswerCount(answerCount.getOrDefault(question.getId(),0L).intValue());
-            if(question.getAnswerCount() == 0L){
+            question.setAnswerCount(answerCount.getOrDefault(question.getId(), 0L).intValue());
+            if (question.getAnswerCount() == 0L) {
                 iterator.remove();
             }
         }
@@ -395,7 +377,6 @@ public class QuestionService {
         dto.setImages(imageUtils.convertToImageDtos(question.getImages()));
         return dto;
     }
-
 
 
 }

@@ -30,8 +30,6 @@ public class ProfileService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-
-
     @Transactional
     public ProfileDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -42,27 +40,26 @@ public class ProfileService {
 
 
 
-    @Transactional
-    public ProfileDto updateProfile(Long userId, ProfileDto profileDto) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (profileDto.getImages() != null && !profileDto.getImages().isEmpty()) {
-            user.getImages().clear();
-            for (ImageDto imageDto : profileDto.getImages()) {
-                Image image = new Image();
-                image.setUrl(imageDto.getUrl());
-                image.setOriginalFileName(imageDto.getOriginalFileName());
-                image.setStoreFileName(imageDto.getStoreFileName());
-                image.setUser(user);
-                user.getImages().add(image);
-            }
-        }
-
-        userRepository.save(user);
-        return convertToProfileDto(user);
-    }
-
+//    @Transactional
+//    public ProfileDto updateProfile(Long userId, ProfileDto profileDto) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        if (profileDto.getImages() != null && !profileDto.getImages().isEmpty()) {
+//            user.getImages().clear();
+//            for (ImageDto imageDto : profileDto.getImages()) {
+//                Image image = new Image();
+//                image.setUrl(imageDto.getUrl());
+//                image.setOriginalFileName(imageDto.getOriginalFileName());
+//                image.setStoreFileName(imageDto.getStoreFileName());
+//                image.setUser(user);
+//                user.getImages().add(image);
+//            }
+//        }
+//
+//        userRepository.save(user);
+//        return convertToProfileDto(user);
+//    }
 
     private ProfileDto convertToProfileDto(User user) {
         ProfileDto profileDto = new ProfileDto();
@@ -74,9 +71,4 @@ public class ProfileService {
         profileDto.setImages(imageUtils.convertToImageDtos(user.getImages()));
         return profileDto;
     }
-
-
-
-
-
 }
