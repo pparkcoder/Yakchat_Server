@@ -11,8 +11,6 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.LinkedHashMap;
 
 @Component
 public class ImageUtils {
@@ -47,8 +45,8 @@ public class ImageUtils {
 
                 // ImageDto 객체 생성하여 URL과 파일 이름 설정
                 ImageDto imageDto = new ImageDto();
-                imageDto.setStoreFileName(fileName);
-                imageDto.setUrl(imageUrl);
+//                imageDto.setStoreFileName(fileName);
+//                imageDto.setUrl(imageUrl);
                 imageDto.setMime(mime);
 
                 // 결과 리스트에 추가
@@ -70,8 +68,8 @@ public class ImageUtils {
                 String fileName = "image_" + UUID.randomUUID();
                 String imageUrl = saveBase64Image(base64Data, fileName, mime );
                 ImageDto imageDto = new ImageDto();
-                imageDto.setStoreFileName(fileName);
-                imageDto.setUrl(imageUrl);
+//                imageDto.setStoreFileName(fileName);
+//                imageDto.setUrl(imageUrl);
                 imageDto.setMime(mime);
                 imageDtos.add(imageDto);
             }
@@ -142,9 +140,9 @@ public class ImageUtils {
         for (Image image : images) {
             ImageDto imageDto = new ImageDto();
             imageDto.setId(image.getId());
-            imageDto.setOriginalFileName(image.getOriginalFileName());
-            imageDto.setStoreFileName(image.getStoreFileName());
-            imageDto.setUrl(image.getUrl());
+//            imageDto.setOriginalFileName(image.getOriginalFileName());
+//            imageDto.setStoreFileName(image.getStoreFileName());
+//            imageDto.setUrl(image.getUrl());
 //            imageDto.setUserId(image.getUser() != null ? image.getUser().getId() : null);
 //            imageDto.setAnswerId(image.getAnswer() != null ? image.getAnswer().getId() : null);
 //            imageDto.setQuestionId(image.getQuestion() != null ? image.getQuestion().getId() : null);

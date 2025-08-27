@@ -19,14 +19,8 @@ public class Image {
     @Column(name = "image_id")
     private Long id;
 
-    private String originalFileName; // 사용자가 업로드 한 파일 명
-
-    private String storeFileName; // 저장소에 저장된 파일 명
-
-    private String preSignedUrlKey;
-
     @Column(nullable = false)
-    private String url;
+    private String urlKey;
 
     private String mime; // MIME 타입
 

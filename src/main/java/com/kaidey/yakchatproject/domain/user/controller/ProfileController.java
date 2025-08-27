@@ -45,43 +45,41 @@ public class ProfileController {
     }
 
     // 프로필 업데이트 (이미지 및 기타 데이터)
-    @PutMapping(value = "/update", consumes = {"multipart/form-data"})
-    public ResponseEntity<ProfileDto> updateProfile(
-            @RequestParam(value = "username", required = false) String username,
-            @RequestParam(value = "school", required = false) String school,
-            @RequestParam(value = "grade", required = false) String grade,
-            @RequestParam(value = "age", required = false) Integer age,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestHeader("Authorization") String token) {
-
-        Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
-        ProfileDto profileDto = new ProfileDto();
-        profileDto.setUsername(username);
-        profileDto.setSchool(school);
-        profileDto.setGrade(grade);
-        profileDto.setAge(age);
-
-        if (images != null && !images.isEmpty()) {
-            try {
-                List<Image> uploadedImages = imageService.saveAnswerImages(images, null); // Answer 없이 저장
-                List<ImageDto> imageDtos = new ArrayList<>();
-                for (Image image : uploadedImages) {
-                    ImageDto imageDto = new ImageDto();
-                    imageDto.setOriginalFileName(image.getOriginalFileName());
-                    imageDto.setStoreFileName(image.getStoreFileName());
-                    imageDto.setUrl(image.getUrl());
-                    imageDto.setMime(image.getMime());
-                    imageDtos.add(imageDto);
-                }
-                profileDto.setImages(imageDtos);
-            } catch (IOException e) {
-                return ResponseEntity.status(500).body(null);
-            }
-        }
-
-        ProfileDto updatedProfile = profileService.updateProfile(userId, profileDto);
-        return ResponseEntity.ok(updatedProfile);
-    }
-
-
+//    @PutMapping
+//    public ResponseEntity<ProfileDto> updateProfile(
+//            @RequestParam(value = "username", required = false) String username,
+//            @RequestParam(value = "school", required = false) String school,
+//            @RequestParam(value = "grade", required = false) String grade,
+//            @RequestParam(value = "age", required = false) Integer age,
+//            @RequestParam(value = "images", required = false) List<String> keys,
+//            @RequestHeader("Authorization") String token) {
+//
+//        Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
+//        ProfileDto profileDto = new ProfileDto();
+//        profileDto.setUsername(username);
+//        profileDto.setSchool(school);
+//        profileDto.setGrade(grade);
+//        profileDto.setAge(age);
+//
+//        if (images != null && !images.isEmpty()) {
+//            try {
+//                List<Image> uploadedImages = imageService.saveAnswerImages(images, null); // Answer 없이 저장
+//                List<ImageDto> imageDtos = new ArrayList<>();
+//                for (Image image : uploadedImages) {
+//                    ImageDto imageDto = new ImageDto();
+////                    imageDto.setOriginalFileName(image.getOriginalFileName());
+////                    imageDto.setStoreFileName(image.getStoreFileName());
+//                    imageDto.setUrl(image.getUrl());
+//                    imageDto.setMime(image.getMime());
+//                    imageDtos.add(imageDto);
+//                }
+//                profileDto.setImages(imageDtos);
+//            } catch (IOException e) {
+//                return ResponseEntity.status(500).body(null);
+//            }
+//        }
+//
+//        ProfileDto updatedProfile = profileService.updateProfile(userId, profileDto);
+//        return ResponseEntity.ok(updatedProfile);
+//    }
 }

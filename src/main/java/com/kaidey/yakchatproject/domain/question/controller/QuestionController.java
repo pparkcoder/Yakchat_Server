@@ -1,42 +1,31 @@
 package com.kaidey.yakchatproject.domain.question.controller;
 
 import com.kaidey.yakchatproject.domain.question.dto.QuestionDto;
-import com.kaidey.yakchatproject.domain.question.service.QuestionService;
-import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
-import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
-import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
 import com.kaidey.yakchatproject.domain.question.dto.QuestionLikeStatusDto;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.kaidey.yakchatproject.domain.question.dto.QuestionWithAnswersDto;
+import com.kaidey.yakchatproject.domain.question.service.QuestionService;
+import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.apache.tika.mime.MimeTypeException;
-import org.springframework.web.multipart.MultipartFile;
-
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/questions")
+@RequiredArgsConstructor
 public class QuestionController {
 
     private final QuestionService questionService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final ImageUtils imageUtils;
-
-    @Autowired
-    public QuestionController(QuestionService questionService, JwtTokenProvider jwtTokenProvider, ImageUtils imageUtils) {
-        this.questionService = questionService;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.imageUtils = imageUtils;
-    }
 
     // 질문 생성
-    @PostMapping(consumes = {"multipart/form-data"})
+    @PostMapping
     public ResponseEntity<QuestionDto> createQuestion(
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam("subjectId") Long subjectId,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,  // List<String>으로 변경
+            @RequestParam(value = "keys", required = false) List<String> keys,
             @RequestHeader("Authorization") String token) {
 
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
@@ -45,10 +34,9 @@ public class QuestionController {
         questionDto.setContent(content);
         questionDto.setSubjectId(subjectId);
         questionDto.setUserId(userId);
-        QuestionDto newQuestion = questionService.createQuestion(questionDto, images);
+        QuestionDto newQuestion = questionService.createQuestion(questionDto, keys);
         return ResponseEntity.ok(newQuestion);
     }
-
 
     // 질문 조회
     @GetMapping("/{id}")
@@ -67,7 +55,6 @@ public class QuestionController {
         QuestionWithAnswersDto questionWithAnswers = questionService.getQuestionWithAnswers(id, userId);
         return ResponseEntity.ok(questionWithAnswers);
     }
-
 
     // 모든 질문 조회
     @GetMapping
@@ -97,15 +84,12 @@ public class QuestionController {
         return ResponseEntity.ok(questions);
     }
 
-
-
     // 최신 질문 조회 5개
     @GetMapping("/latest")
     public ResponseEntity<List<QuestionDto>> getLatestQuestions() {
         List<QuestionDto> questions = questionService.getLatestQuestions();
         return ResponseEntity.ok(questions);
     }
-
 
     // 과목 ID로 최신 질문 조회 5개
     @GetMapping("/subject/{subjectId}/latest")
@@ -114,15 +98,14 @@ public class QuestionController {
         return ResponseEntity.ok(questions);
     }
 
-
     // 질문 업데이트
-    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    @PutMapping("/{id}")
     public ResponseEntity<QuestionDto> updateQuestion(
             @PathVariable Long id,
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam("subjectId") Long subjectId,
-            @RequestParam(value = "images", required = false) List<String> images,  // List<String>으로 변경
+            @RequestParam(value = "keys", required = false) List<String> keys,
             @RequestHeader("Authorization") String token) {
 
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
@@ -131,18 +114,7 @@ public class QuestionController {
         questionDto.setContent(content);
         questionDto.setSubjectId(subjectId);
         questionDto.setUserId(userId);
-
-        // 이미지 처리 로직을 Service로 위임
-        if (images != null && !images.isEmpty()) {
-            try {
-                questionDto.setImages(imageUtils.processImages(images)); // 이미지 처리 서비스 호출
-            } catch (MimeTypeException | IllegalArgumentException e) {
-                return ResponseEntity.status(e instanceof MimeTypeException ? 500 : 400).body(null);
-            }
-        }
-
-        // 서비스에서 질문을 업데이트
-        QuestionDto updatedQuestion = questionService.updateQuestion(id, questionDto);
+        QuestionDto updatedQuestion = questionService.updateQuestion(id, questionDto, keys);
         return ResponseEntity.ok(updatedQuestion);
     }
 
