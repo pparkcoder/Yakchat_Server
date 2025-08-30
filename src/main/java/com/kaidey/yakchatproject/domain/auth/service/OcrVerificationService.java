@@ -118,6 +118,7 @@ public class OcrVerificationService {
             f.setName(n.path("name").asText(""));
             f.setStudentId(n.path("studentId").asText(""));
             f.setUniversity(n.path("university").asText(""));
+            f.setDepartment(n.path("department").asText(""));
         } else {
             f.setName(n.path("name").asText(""));
             f.setLicenseNumber(n.path("licenseNumber").asText(""));
@@ -132,7 +133,7 @@ public class OcrVerificationService {
         Map<String, Object> tempData = new HashMap<>();
         tempData.put("documentType", documentType);
         tempData.put("valid", ocrResult.path("valid").asBoolean());
-        tempData.put("fields", fields);
+        tempData.put("fields", objectMapper.convertValue(fields, Map.class));
         tempData.put("originalImage", Base64.getEncoder().encodeToString(imageData));
         tempData.put("contentType", (contentType != null && contentType.startsWith("image/")) ? contentType : "image/jpeg");
         tempData.put("timestamp", System.currentTimeMillis());

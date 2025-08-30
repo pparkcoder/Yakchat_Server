@@ -34,6 +34,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserType userType = UserType.STUDENT; // 기본값 학생
+
     @Column(nullable = false)
     private String school;
 

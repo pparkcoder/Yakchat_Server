@@ -32,4 +32,12 @@ public class UserErrorCode extends ErrorCode{
     public static final UserErrorCode ALREADY_EXIST_EMAIL = new UserErrorCode(
             HttpStatus.CONFLICT, "ALREADY_EXIST_EMAIL", "이미 사용 중인 이메일입니다."
     );
+    public static final UserErrorCode EMAIL_NOT_VERIFIED = new UserErrorCode(
+            HttpStatus.PRECONDITION_FAILED, "EMAIL_NOT_VERIFIED", "이메일 인증이 완료되지 않았습니다."
+    );
+
+    public static final UserErrorCode INVALID_EMAIL = new UserErrorCode(
+            HttpStatus.BAD_REQUEST, "INVALID_EMAIL", "유효하지 않은 이메일입니다."
+    );
+
 }

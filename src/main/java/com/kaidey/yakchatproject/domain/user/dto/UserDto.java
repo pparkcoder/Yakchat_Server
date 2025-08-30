@@ -1,5 +1,6 @@
 package com.kaidey.yakchatproject.domain.user.dto;
 
+import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,6 +15,7 @@ public class UserDto {
     private String username; // 아이디
     private String email; // 이메일
     private String password; // 비밀번호 (암호화된 형태로 저장될 것)
+    private UserType userType;
     private String school;
     private String grade;
     private Integer age;

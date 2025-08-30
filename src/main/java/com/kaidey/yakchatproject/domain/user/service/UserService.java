@@ -1,32 +1,29 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
-import com.kaidey.yakchatproject.domain.user.entity.User;
+import com.kaidey.yakchatproject.domain.user.entity.*;
+import com.kaidey.yakchatproject.domain.user.repository.UserGradeRepository;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
-import com.kaidey.yakchatproject.domain.user.entity.RoleType;
-import com.kaidey.yakchatproject.domain.user.entity.GradeType;
-import com.kaidey.yakchatproject.domain.user.repository.UserGradeRepository;
-import com.kaidey.yakchatproject.domain.user.entity.UserGrade;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.*;
+
 
 @Service
 public class UserService {
-
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserGradeRepository userGradeRepository;
     private final GradeService gradeService;
-
 
     public UserService(UserRepository userRepository, GradeService gradeService,
                        PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider,
@@ -41,8 +38,10 @@ public class UserService {
     // 사용자 등록
     @Transactional
     public User registerUser(UserDto userDto) {
-        usernameExists(userDto.getUsername()); // 사용자 이름 중복 체크
+        usernameExists(userDto.getUsername());
         emailExists(userDto.getEmail());
+
+        UserType type = (userDto.getUserType() != null) ? userDto.getUserType() : UserType.STUDENT;
 
         User user = new User();
         user.setUsername(userDto.getUsername());
@@ -51,12 +50,13 @@ public class UserService {
         user.setSchool(userDto.getSchool());
         user.setGrade(userDto.getGrade());
         user.setAge(userDto.getAge());
+        user.setUserType(type); // CHANGED: 저장
 
+        // 역할 기본값
         Set<RoleType> roles = new HashSet<>();
-        roles.add(RoleType.ROLE_USER); // 기본적으로 USER 역할 부여
+        roles.add(RoleType.ROLE_USER);
         user.setRoles(roles);
 
-        //  유저 저장 후 UserGrade 자동 생성
         User savedUser = userRepository.save(user);
         createUserGrade(savedUser);
 
@@ -72,7 +72,6 @@ public class UserService {
             throw new BusinessException(UserErrorCode.NOT_MATCHES_PASSWORD);
         }
 
-
         String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
         Map<String, String> tokens = new HashMap<>();
@@ -81,43 +80,40 @@ public class UserService {
         return tokens;
     }
 
-
     // 토큰 갱신
     public Map<String, String> refreshToken(String refreshToken) {
-        // 리프레시 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new BusinessException(UserErrorCode.INVAILD_REFRESH_TOKEN);
         }
-
-        // 리프레시 토큰에서 사용자 정보 추출
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
 
-        // 새로운 액세스 토큰과 리프레시 토큰 생성
         String newAccessToken = jwtTokenProvider.generateToken(username, userId);
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(username, userId);
 
-        // 새로운 토큰들을 반환
         Map<String, String> tokens = new HashMap<>();
         tokens.put("access_token", newAccessToken);
         tokens.put("refresh_token", newRefreshToken);
-
         return tokens;
     }
 
     // 사용자 이름 중복 체크
     public void usernameExists(String username) {
         Optional<User> findUserName = userRepository.findByUsername(username);
-        if (!findUserName.isEmpty()) {
+        if (findUserName.isPresent()) {
             throw new BusinessException(UserErrorCode.ALREAD_EXIST_NAME);
         }
     }
 
     public void emailExists(String email) {
+        if (email == null || email.isBlank()) {
+            throw new BusinessException(UserErrorCode.INVALID_EMAIL);   // ← 추가
+        }
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException(UserErrorCode.ALREADY_EXIST_EMAIL);
         }
     }
+
 
     // 특정 사용자 조회
     public User getUserById(Long id) {
@@ -135,10 +131,13 @@ public class UserService {
         try {
             User user = getUserById(id);
             user.setUsername(userDto.getUsername());
-            user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
+            user.setPassword(passwordEncoder.encode(userDto.getPassword()));
             user.setSchool(userDto.getSchool());
             user.setGrade(userDto.getGrade());
             user.setAge(userDto.getAge());
+            if (userDto.getUserType() != null) {
+                user.setUserType(userDto.getUserType());
+            }
             return userRepository.save(user);
         } catch (Exception e) {
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
@@ -150,7 +149,11 @@ public class UserService {
     public void deleteUser(Long id) {
         try {
             User user = getUserById(id);
-            userGradeRepository.deleteById(user.getId()); // UserGrade도 함께 삭제
+
+            // CHANGED: UserGrade PK != userId일 수 있으니 안전하게 조회 후 삭제
+            userGradeRepository.findByUserId(user.getId())
+                    .ifPresent(userGradeRepository::delete);
+
             userRepository.delete(user);
         } catch (Exception e) {
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
@@ -161,7 +164,7 @@ public class UserService {
     public void updateUserActivity(User user, int questions, int accepted, int likes, int purchases, int sales) {
         try {
             UserGrade userGrade = userGradeRepository.findByUserId(user.getId())
-                    .orElseGet(() -> createUserGrade(user)); // userGrade가 없으면 생성
+                    .orElseGet(() -> createUserGrade(user));
 
             userGrade.setQuestionCount(userGrade.getQuestionCount() + questions);
             userGrade.setAcceptedCount(userGrade.getAcceptedCount() + accepted);
@@ -169,7 +172,6 @@ public class UserService {
             userGrade.setPurchasedMaterialCount(userGrade.getPurchasedMaterialCount() + purchases);
             userGrade.setSoldMaterialCount(userGrade.getSoldMaterialCount() + sales);
 
-            // 등급 업데이트
             gradeService.updateUserGrade(userGrade);
             userGradeRepository.save(userGrade);
         } catch (Exception e) {
@@ -188,6 +190,7 @@ public class UserService {
             newUserGrade.setLikeCount(0);
             newUserGrade.setPurchasedMaterialCount(0);
             newUserGrade.setSoldMaterialCount(0);
+            user.setUserGrade(newUserGrade);
 
             return userGradeRepository.save(newUserGrade);
         } catch (Exception e) {

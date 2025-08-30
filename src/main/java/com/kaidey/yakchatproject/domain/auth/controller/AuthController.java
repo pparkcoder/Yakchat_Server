@@ -2,13 +2,16 @@ package com.kaidey.yakchatproject.domain.auth.controller;
 
 import com.kaidey.yakchatproject.domain.auth.dto.*;
 import com.kaidey.yakchatproject.domain.auth.service.OcrVerificationService;
-import com.kaidey.yakchatproject.domain.email.dto.EmailDto;
+import com.kaidey.yakchatproject.domain.auth.dto.OcrStatusResponse;
+import com.kaidey.yakchatproject.domain.auth.dto.OcrVerificationResponse;
 import com.kaidey.yakchatproject.domain.email.service.EmailService;
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
+import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.OcrErrorCode;
+import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,12 +50,14 @@ public class AuthController {
     }
 
 
-    @PostMapping("/register-complete")
+    @PostMapping("/register")
     public ResponseEntity<User> completeRegistration(
             @RequestBody @Valid CompleteRegistrationRequest request,
             @RequestHeader("Temp-Token") String tempToken) {
         String verified = redisUtil.getData("email:verified:" + request.getEmail());
-        if (!"true".equals(verified)) throw new BusinessException(OcrErrorCode.TEMP_TOKEN_NOT_FOUND.toErrorCode());
+        if (!"true".equals(verified)) {
+            throw new BusinessException(UserErrorCode.EMAIL_NOT_VERIFIED);  // ← 교체 권장
+        }
 
 
         Map<String, Object> ocrData = ocrVerificationService.getOcrDataFromRedis(tempToken);
@@ -70,17 +75,28 @@ public class AuthController {
         UserDto dto = new UserDto();
         dto.setUsername(req.getUsername());
         dto.setPassword(req.getPassword());
+        dto.setEmail(req.getEmail());
+
         String docType = (String) ocrData.get("documentType");
-        @SuppressWarnings("unchecked") Map<String, Object> f = (Map<String, Object>) ocrData.get("fields");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> f = (Map<String, Object>) ocrData.get("fields");
+
+        // ✅ OCR 타입에 따라 userType 결정
         if ("student".equals(docType)) {
-            dto.setSchool((String) f.get("university"));
+            dto.setUserType(UserType.STUDENT);
+            dto.setSchool((String) f.getOrDefault("university", "미상"));
             dto.setGrade("약학과 학생");
             dto.setAge(22);
-        } else {
+        } else if ("professional".equals(docType)) {
+            dto.setUserType(UserType.PROFESSIONAL);
             dto.setSchool("약사");
             dto.setGrade("전문 약사");
             dto.setAge(30);
+        } else {
+            // ✅ 혹시 모를 오염 데이터 방지
+            throw new BusinessException(OcrErrorCode.INVALID_DOCUMENT_FORMAT.toErrorCode());
         }
+
         return dto;
     }
 

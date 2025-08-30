@@ -113,5 +113,8 @@ public class EmailService {
         if (userCode == null || !userCode.equals(redisUtil.getData(userEmail))) {
             throw new BusinessException(CommonErrorCode.INVALID_EMAIL_CODE);
         }
+        redisUtil.setDataExpire("email:verified:" + userEmail, "true", emailCodeTtlSeconds);
+        redisUtil.deleteData(userEmail);
+
     }
 }
