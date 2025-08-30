@@ -72,8 +72,6 @@ public class QuestionService {
         question.setSubject(subject);
         question.setUser(user);
 
-        // 등업을 위한 로직
-        userService.updateUserActivity(user, 1, 0, 0, 0, 0);
 
         // 이미지가 있으면 미리 리스트에 추가
         if (keys != null && !keys.isEmpty()) {
@@ -82,7 +80,7 @@ public class QuestionService {
         }
 
         Question savedQuestion = questionRepository.save(question);
-
+        userService.updateUserActivity(user, 1, 0);
         return convertToDto(savedQuestion);
     }
 

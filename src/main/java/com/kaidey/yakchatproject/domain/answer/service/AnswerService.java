@@ -82,6 +82,7 @@ public class AnswerService {
 
         // Answer 저장
         Answer savedAnswer = answerRepository.save(answer);
+        userService.updateUserActivity(user, 0, 1);
         return convertToDto(savedAnswer);
     }
 
@@ -186,7 +187,7 @@ public class AnswerService {
         answerRepository.save(answer);
 
         // 답변 작성자의 활동 점수 업데이트 (예: 채택된 답변 개수 증가)
-        userService.updateUserActivity(answer.getUser(), 0, 1, 0, 0, 0);
+        userService.incrementAcceptedCount(answer.getUser(), 1);
     }
 
     @Transactional

@@ -1,6 +1,7 @@
 package com.kaidey.yakchatproject.domain.user.controller;
 
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
+import com.kaidey.yakchatproject.domain.user.dto.PromotionDto;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
 import com.kaidey.yakchatproject.domain.user.dto.DeleteAccountRequest;
@@ -78,6 +79,18 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // 특정 사용자 승급 정보
+    @GetMapping("/{id}/promotion")
+    public ResponseEntity<PromotionDto> getPromotion(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getPromotion(id));
+    }
+
+    // 로그인 사용자 승급 정보
+    @GetMapping("/me/promotion")
+    public ResponseEntity<PromotionDto> getMyPromotion(@AuthenticationPrincipal User me) {
+        return ResponseEntity.ok(userService.getPromotion(me.getId()));
     }
 
     

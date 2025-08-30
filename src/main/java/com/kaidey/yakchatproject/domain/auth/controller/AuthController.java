@@ -102,12 +102,10 @@ public class AuthController {
 
     private void updateUserGradeFromOcrData(User user, Map<String, Object> ocrData) {
         String docType = (String) ocrData.get("documentType");
-        if ("student".equals(docType)) {
-            userService.updateUserActivity(user, 0, 0, 0, 0, 0);
-        } else {
-            userService.updateUserActivity(user, 5, 2, 10, 1, 0);
-        }
+        // 회원가입 시 등급 변동 없이 0,0 유지 (보너스를 원하면 아래 숫자 조정)
+        userService.updateUserActivity(user, 0, 0);
     }
+
 
     private void saveDocumentImageToS3(Long userId, Map<String, Object> ocrData) {
         try {
