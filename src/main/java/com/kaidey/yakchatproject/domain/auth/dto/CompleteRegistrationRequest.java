@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter @Setter @NoArgsConstructor
 public class CompleteRegistrationRequest {
     @NotEmpty @Size(min = 3, max = 50)
-    private String username;
+    private String nickname;
 
     @NotEmpty @Size(min = 8)
     private String password;

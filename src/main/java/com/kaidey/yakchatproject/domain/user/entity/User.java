@@ -48,8 +48,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String grade; // 학교 학년 (등급과 별개)
 
-    @Column(nullable = false)
-    private Integer age;
+//    @Column(nullable = false)
+//    private Integer age;
 
     @Column(nullable = false)
     private Boolean isActive = true;

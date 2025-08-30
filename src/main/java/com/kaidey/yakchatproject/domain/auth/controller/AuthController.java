@@ -73,7 +73,7 @@ public class AuthController {
 
     private UserDto createUserDtoFromOcrData(CompleteRegistrationRequest req, Map<String, Object> ocrData) {
         UserDto dto = new UserDto();
-        dto.setNickname(req.getUsername());
+        dto.setNickname(req.getNickname());
         dto.setPassword(req.getPassword());
         dto.setEmail(req.getEmail());
 
@@ -81,17 +81,29 @@ public class AuthController {
         @SuppressWarnings("unchecked")
         Map<String, Object> f = (Map<String, Object>) ocrData.get("fields");
 
+        String realName = null;
+        if (f != null) {
+            Object nameObj = f.get("name");
+            if (nameObj instanceof String) {
+                String s = ((String) nameObj).trim();
+                if (!s.isEmpty()) realName = s;
+            }
+        }
+        if (realName == null) {
+            // name이 비어 있으면 가입 중단(에러코드는 프로젝트 규칙에 맞춰 교체 가능)
+            throw new BusinessException(OcrErrorCode.INVALID_DOCUMENT_FORMAT.toErrorCode());
+        }
+        dto.setRealName(realName);
+
         // ✅ OCR 타입에 따라 userType 결정
         if ("student".equals(docType)) {
             dto.setUserType(UserType.STUDENT);
             dto.setSchool((String) f.getOrDefault("university", "미상"));
-            dto.setGrade("약학과 학생");
-            dto.setAge(22);
+            dto.setGrade((String) f.getOrDefault("grade", "미상")); // 문자열 학년
         } else if ("professional".equals(docType)) {
             dto.setUserType(UserType.PROFESSIONAL);
-            dto.setSchool("약사");
-            dto.setGrade("전문 약사");
-            dto.setAge(30);
+            dto.setSchool("미상");
+            dto.setGrade("미상"); // 전문가라 학년 없음, 기본값
         } else {
             // ✅ 혹시 모를 오염 데이터 방지
             throw new BusinessException(OcrErrorCode.INVALID_DOCUMENT_FORMAT.toErrorCode());

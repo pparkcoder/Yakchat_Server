@@ -17,6 +17,6 @@ public class UserDto {
     private String password;
     private String school;
     private String grade;
-    private Integer age;
+//    private Integer age;
     private UserType userType;
 }
