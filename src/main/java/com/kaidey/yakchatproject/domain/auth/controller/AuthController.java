@@ -73,7 +73,7 @@ public class AuthController {
 
     private UserDto createUserDtoFromOcrData(CompleteRegistrationRequest req, Map<String, Object> ocrData) {
         UserDto dto = new UserDto();
-        dto.setUsername(req.getUsername());
+        dto.setNickname(req.getUsername());
         dto.setPassword(req.getPassword());
         dto.setEmail(req.getEmail());
 

@@ -25,14 +25,18 @@ public class User implements UserDetails {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String username;
+    @Column(nullable = false, length = 50)
+    private String username; //실명
+
+    @Column(nullable = false, length = 50)
+    private String nickname; //별명
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
     @Column(nullable = false)
     private String password;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -62,12 +66,7 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Image> images = new ArrayList<>();
 
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Question> questions = new ArrayList<>();
-//
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<Answer> answers = new ArrayList<>();
-
+    private LocalDateTime lastNicknameChangedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
@@ -107,31 +106,9 @@ public class User implements UserDetails {
     }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-//    @Override
-//    public String getName() {
-//        return username;
-//    }
-
-    @Override
     public boolean isEnabled() {
         return isActive;
     }
-
-    public void updateLastLogin() {
-        this.lastLoginAt = LocalDateTime.now();
-    }
-
-
-
-
-
-
-
-
 
 
 }

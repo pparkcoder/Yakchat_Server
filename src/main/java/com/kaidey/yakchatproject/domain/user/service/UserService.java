@@ -1,6 +1,7 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
+import com.kaidey.yakchatproject.domain.user.dto.PromotionDto;
 import com.kaidey.yakchatproject.domain.user.entity.*;
 import com.kaidey.yakchatproject.domain.user.repository.UserGradeRepository;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
@@ -38,21 +39,29 @@ public class UserService {
     // 사용자 등록
     @Transactional
     public User registerUser(UserDto userDto) {
-        usernameExists(userDto.getUsername());
         emailExists(userDto.getEmail());
 
         UserType type = (userDto.getUserType() != null) ? userDto.getUserType() : UserType.STUDENT;
 
+        // 닉네임 중복만 체크
+        String nickname = userDto.getNickname();
+        if (nickname == null || nickname.isBlank()) {
+            nickname = userDto.getRealName(); // 닉네임 없으면 실명 기반
+        }
+        if (userRepository.existsByNicknameIgnoreCase(nickname)) {
+            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
+        }
+
         User user = new User();
-        user.setUsername(userDto.getUsername());
+        user.setUsername(userDto.getRealName());
+        user.setNickname(nickname);
         user.setEmail(userDto.getEmail());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setSchool(userDto.getSchool());
         user.setGrade(userDto.getGrade());
         user.setAge(userDto.getAge());
-        user.setUserType(type); // CHANGED: 저장
+        user.setUserType(type);
 
-        // 역할 기본값
         Set<RoleType> roles = new HashSet<>();
         roles.add(RoleType.ROLE_USER);
         user.setRoles(roles);
@@ -62,6 +71,7 @@ public class UserService {
 
         return savedUser;
     }
+
 
     // 사용자 로그인
     public Map<String, String> loginUser(UserDto userDto) {
@@ -101,7 +111,7 @@ public class UserService {
     public void usernameExists(String username) {
         Optional<User> findUserName = userRepository.findByUsername(username);
         if (findUserName.isPresent()) {
-            throw new BusinessException(UserErrorCode.ALREAD_EXIST_NAME);
+            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
         }
     }
 
@@ -136,7 +146,7 @@ public class UserService {
     public User updateUser(Long id, UserDto userDto) {
         try {
             User user = getUserById(id);
-            user.setUsername(userDto.getUsername());
+            user.setUsername(userDto.getRealName());
             user.setPassword(passwordEncoder.encode(userDto.getPassword()));
             user.setSchool(userDto.getSchool());
             user.setGrade(userDto.getGrade());
@@ -167,40 +177,71 @@ public class UserService {
     }
 
     @Transactional
-    public void updateUserActivity(User user, int questions, int accepted, int likes, int purchases, int sales) {
+    public void updateUserActivity(User user, int questionDelta, int answerDelta) {
         try {
-            UserGrade userGrade = userGradeRepository.findByUserId(user.getId())
+            UserGrade g = userGradeRepository.findByUserId(user.getId())
                     .orElseGet(() -> createUserGrade(user));
-
-            userGrade.setQuestionCount(userGrade.getQuestionCount() + questions);
-            userGrade.setAcceptedCount(userGrade.getAcceptedCount() + accepted);
-            userGrade.setLikeCount(userGrade.getLikeCount() + likes);
-            userGrade.setPurchasedMaterialCount(userGrade.getPurchasedMaterialCount() + purchases);
-            userGrade.setSoldMaterialCount(userGrade.getSoldMaterialCount() + sales);
-
-            gradeService.updateUserGrade(userGrade);
-            userGradeRepository.save(userGrade);
+            g.setQuestionCount(g.getQuestionCount() + questionDelta);
+            g.setAnswerCount(g.getAnswerCount() + answerDelta);
+            gradeService.updateUserGrade(g);
+            userGradeRepository.save(g);
         } catch (Exception e) {
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
     }
 
     @Transactional
+    public void incrementAcceptedCount(User user, int delta) {
+        UserGrade g = userGradeRepository.findByUserId(user.getId())
+                .orElseGet(() -> createUserGrade(user));
+        g.setAcceptedCount(g.getAcceptedCount() + delta);
+        userGradeRepository.save(g);
+    }
+
+
+    @Transactional
     public UserGrade createUserGrade(User user) {
         try {
-            UserGrade newUserGrade = new UserGrade();
-            newUserGrade.setUser(user);
-            newUserGrade.setGrade(GradeType.GRAY);
-            newUserGrade.setQuestionCount(0);
-            newUserGrade.setAcceptedCount(0);
-            newUserGrade.setLikeCount(0);
-            newUserGrade.setPurchasedMaterialCount(0);
-            newUserGrade.setSoldMaterialCount(0);
-            user.setUserGrade(newUserGrade);
-
-            return userGradeRepository.save(newUserGrade);
+            UserGrade g = new UserGrade();
+            g.setUser(user);
+            g.setGrade(GradeType.NONE);
+            g.setQuestionCount(0);
+            g.setAnswerCount(0);
+            g.setAcceptedCount(0);
+            g.setLikeCount(0);
+            g.setPurchasedMaterialCount(0);
+            g.setSoldMaterialCount(0);
+            user.setUserGrade(g);
+            return userGradeRepository.save(g);
         } catch (Exception e) {
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
         }
+    }
+
+    public PromotionDto getPromotion(Long userId) {
+        User user = getUserById(userId);
+        UserGrade g = userGradeRepository.findByUserId(user.getId())
+                .orElseGet(() -> createUserGrade(user));
+        gradeService.updateUserGrade(g);
+
+        GradeService.NextPromotion np = gradeService.getNextPromotion(g);
+        return new PromotionDto(
+                toKorean(g.getGrade()),
+                np.getNextGrade() == null ? null : toKorean(np.getNextGrade()),
+                np.getProgress(),
+                np.getTarget(),
+                np.progressRate()
+        );
+    }
+
+    private String toKorean(GradeType t) {
+        return switch (t) {
+            case NONE -> "무등급";
+            case SESSAK -> "새싹";
+            case HANAL -> "한알";
+            case DUAL -> "두알";
+            case GOSU -> "고수";
+            case MYEONGYAK -> "명약";
+        };
     }
 }

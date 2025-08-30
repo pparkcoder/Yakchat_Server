@@ -8,9 +8,17 @@ public class UserErrorCode extends ErrorCode{
         super(status, code, message);
     }
 
-    public static final UserErrorCode ALREAD_EXIST_NAME = new UserErrorCode
-            (HttpStatus.CONFLICT, "ALREADY_EXIST_NAME", "이미 존재하는 이름입니다.");
+    public static final UserErrorCode NICKNAME_TAKEN = new UserErrorCode(
+            HttpStatus.CONFLICT, "NICKNAME_TAKEN", "이미 사용 중인 닉네임입니다."
+    );
 
+    public static final UserErrorCode NICKNAME_INVALID = new UserErrorCode(
+            HttpStatus.BAD_REQUEST, "NICKNAME_INVALID", "유효하지 않은 닉네임입니다."
+    );
+
+    public static final UserErrorCode NICKNAME_SAME_AS_BEFORE = new UserErrorCode(
+            HttpStatus.BAD_REQUEST, "NICKNAME_SAME_AS_BEFORE", "현재 닉네임과 동일합니다."
+    );
     public static final UserErrorCode INVALID_USER_NAME = new UserErrorCode
             (HttpStatus.BAD_REQUEST, "INVALID_USER_NAME", "사용할 수 없는 이름입니다.");
 

@@ -1,6 +1,8 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
+import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeRequest;
+import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
@@ -14,7 +16,7 @@ import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
 
-
+import java.time.LocalDateTime;
 
 @Service
 public class ProfileService {
@@ -37,6 +39,44 @@ public class ProfileService {
 
         return convertToProfileDto(user);
     }
+
+
+    @Transactional(readOnly = true)
+    public boolean isNicknameAvailable(String nickname) {
+        if (nickname == null || nickname.isBlank()) return false;
+        // 대소문자 무시 중복 확인
+        return !userRepository.existsByNicknameIgnoreCase(nickname);
+    }
+
+
+    @Transactional
+    public NicknameChangeResponse changeNickname(Long userId, String newNickname) {
+        if (newNickname == null || newNickname.isBlank()) {
+            throw new BusinessException(UserErrorCode.NICKNAME_INVALID);
+        }
+        if (userRepository.existsByNicknameIgnoreCase(newNickname)) {
+            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+
+        // 동일 닉네임이면 에러로 처리(원하면 그냥 OK 반환으로 바꿔도 됨)
+        if (user.getNickname() != null
+                && user.getNickname().equalsIgnoreCase(newNickname)) {
+            throw new BusinessException(UserErrorCode.NICKNAME_SAME_AS_BEFORE);
+        }
+
+        user.setNickname(newNickname);
+        user.setLastNicknameChangedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return new NicknameChangeResponse(
+                user.getNickname(),
+                user.getLastNicknameChangedAt().toString()
+        );
+    }
+
 
 
 
