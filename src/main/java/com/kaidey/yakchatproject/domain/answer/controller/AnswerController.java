@@ -1,57 +1,38 @@
 package com.kaidey.yakchatproject.domain.answer.controller;
 
-import com.kaidey.yakchatproject.domain.question.controller.QuestionController;
-import com.kaidey.yakchatproject.domain.user.entity.User;
-import com.kaidey.yakchatproject.domain.user.service.UserService;
-
-import org.springframework.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-
 import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
 import com.kaidey.yakchatproject.domain.answer.service.AnswerService;
+import com.kaidey.yakchatproject.domain.user.entity.User;
+import com.kaidey.yakchatproject.domain.user.service.UserService;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
-import java.util.HashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/answers")
+@RequiredArgsConstructor
 public class AnswerController {
-
-
-    private static final Logger logger = LoggerFactory.getLogger(QuestionController.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(AnswerController.class);
 
     private final AnswerService answerService;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
 
-    @Autowired
-    public AnswerController(AnswerService answerService, JwtTokenProvider jwtTokenProvider,
-                            UserService userService) {
-        this.answerService = answerService;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userService = userService;
-    }
-
     // 답변 생성
-    @PostMapping(consumes = {"multipart/form-data"})
+    @PostMapping
     public ResponseEntity<AnswerDto> createAnswer(
             @RequestParam("content") String content,
             @RequestParam("questionId") Long questionId,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "keys", required = false) List<String> keys,
             @RequestHeader("Authorization") String token) {
 
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
         AnswerDto answerDto = new AnswerDto(content, questionId, userId);
-        AnswerDto newAnswer = answerService.createAnswer(answerDto, images);
+        AnswerDto newAnswer = answerService.createAnswer(answerDto, keys);
 
         return ResponseEntity.ok(newAnswer);
     }
@@ -113,29 +94,19 @@ public class AnswerController {
     }
 
     // 답변 업데이트
-    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
-    public ResponseEntity<Map<String, Object>> updateAnswer(
+    @PutMapping("/{id}")
+    public ResponseEntity<AnswerDto> updateAnswer(
             @PathVariable Long id,
             @RequestParam("content") String content,
             @RequestParam("questionId") Long questionId,
-            @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
+            @RequestParam(value = "keys", required = false) List<String> keys,
             @RequestHeader("Authorization") String token) {
 
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
         AnswerDto answerDto = new AnswerDto(content, questionId, userId);
+        AnswerDto updatedAnswer = answerService.updateAnswer(id, answerDto, keys);
 
-        AnswerDto updatedAnswer = answerService.updateAnswer(id, answerDto, images, deleteImageIds);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("answerId", updatedAnswer.getId());
-        response.put("content", updatedAnswer.getContent());
-        response.put("questionId", updatedAnswer.getQuestionId());
-        response.put("userId", updatedAnswer.getUserId());
-        response.put("images", updatedAnswer.getImages());
-
-        return ResponseEntity.ok(response);
-
+        return ResponseEntity.ok(updatedAnswer);
     }
 
 
