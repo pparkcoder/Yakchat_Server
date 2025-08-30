@@ -105,6 +105,12 @@ public class UserService {
         }
     }
 
+    // 이메일 중복 체크(읽기 전용)
+    public boolean existsByEmail(String email) {
+        if (email == null || email.isBlank()) return false;
+        return userRepository.existsByEmail(email);
+    }
+
     public void emailExists(String email) {
         if (email == null || email.isBlank()) {
             throw new BusinessException(UserErrorCode.INVALID_EMAIL);   // ← 추가

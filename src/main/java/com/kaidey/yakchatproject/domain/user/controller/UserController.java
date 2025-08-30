@@ -3,9 +3,12 @@ package com.kaidey.yakchatproject.domain.user.controller;
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
+import com.kaidey.yakchatproject.domain.user.dto.DeleteAccountRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Map;
@@ -17,11 +20,11 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
-        User newUser = userService.registerUser(userDto);
-        return ResponseEntity.ok(newUser);
-    }
+//    @PostMapping("/register")
+//    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
+//        User newUser = userService.registerUser(userDto);
+//        return ResponseEntity.ok(newUser);
+//    }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginUser(@RequestBody UserDto userDto) {
@@ -42,6 +45,16 @@ public class UserController {
         userService.usernameExists(username);
         return ResponseEntity.ok().body(null);
     }
+
+//    @DeleteMapping("/me")
+//    public ResponseEntity<Void> deleteMyAccount(
+//            @AuthenticationPrincipal UserDetails principal,
+//            @RequestBody @Valid DeleteAccountRequest request) {
+//        // principal.getUsername() == 이메일이라고 가정 (프로젝트 규칙에 맞게 조정)
+//        userService.deleteAccountByUsername(principal.getUsername(), request);
+//        return ResponseEntity.noContent().build();
+//    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

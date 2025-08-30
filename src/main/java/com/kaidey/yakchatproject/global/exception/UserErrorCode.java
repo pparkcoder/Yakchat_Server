@@ -40,4 +40,8 @@ public class UserErrorCode extends ErrorCode{
             HttpStatus.BAD_REQUEST, "INVALID_EMAIL", "유효하지 않은 이메일입니다."
     );
 
+    public static final UserErrorCode DELETED_USER = new UserErrorCode(
+            HttpStatus.FORBIDDEN, "DELETED_USER", "탈퇴한 회원입니다."
+    );
+
 }

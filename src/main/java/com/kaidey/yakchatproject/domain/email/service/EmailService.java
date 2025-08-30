@@ -1,6 +1,8 @@
 package com.kaidey.yakchatproject.domain.email.service;
 
 import com.kaidey.yakchatproject.domain.email.dto.EmailDto;
+import com.kaidey.yakchatproject.domain.user.service.UserService;
+import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
@@ -23,6 +25,7 @@ public class EmailService {
     private final RedisUtil redisUtil;
     private final JavaMailSender mailSender;
     private final OcrVerificationService ocrVerificationService;
+    private final UserService userService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -31,10 +34,12 @@ public class EmailService {
     private long emailCodeTtlSeconds;
 
     @Autowired
-    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender, OcrVerificationService ocrVerificationService) {
+    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender,
+                        OcrVerificationService ocrVerificationService, UserService userService) {
         this.redisUtil = redisUtil;
         this.mailSender = mailSender;
         this.ocrVerificationService = ocrVerificationService;
+        this.userService = userService;
     }
 
     // 숫자 6자리 인증 코드 생성
@@ -97,6 +102,9 @@ public class EmailService {
     public void sendEmailCode(EmailDto emailDto) {
         try {
             String toEmail = emailDto.getEmail();
+            if (userService.existsByEmail(toEmail)) {
+                throw new BusinessException(UserErrorCode.ALREADY_EXIST_EMAIL);
+            }
             if (redisUtil.existData(toEmail)) {
                 redisUtil.deleteData(toEmail);
             }
