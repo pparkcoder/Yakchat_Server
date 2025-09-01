@@ -4,6 +4,7 @@ import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.ImageErrorCode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.kaidey.yakchatproject.domain.image.repository.ImageRepository;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ImageService {
 
 
@@ -24,10 +26,6 @@ public class ImageService {
     private String uploadDir;
 
     private final ImageRepository imageRepository;
-
-    public ImageService(ImageRepository imageRepository) {
-        this.imageRepository = imageRepository;
-    }
 
     public ImageDto getImageDtoById(Long id) {
         Optional<Image> optionalImage = imageRepository.findById(id);

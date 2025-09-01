@@ -22,7 +22,7 @@ import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.QuestionErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
@@ -44,18 +45,6 @@ public class QuestionService {
     private final ImageUtils imageUtils = new ImageUtils();
     private final ImageService imageService;
 
-    @Autowired
-    public QuestionService(QuestionRepository questionRepository, SubjectRepository subjectRepository,
-                             UserRepository userRepository, LikeRepository likeRepository, UserService userService,
-                             AnswerRepository answerRepository, ImageService imageService) {
-        this.questionRepository = questionRepository;
-        this.answerRepository = answerRepository;
-        this.subjectRepository = subjectRepository;
-        this.userRepository = userRepository;
-        this.likeRepository = likeRepository;
-        this.userService = userService;
-        this.imageService = imageService;
-    }
 
     // 질문 생성
     @Transactional

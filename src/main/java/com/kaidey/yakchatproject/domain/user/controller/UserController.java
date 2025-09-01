@@ -15,31 +15,12 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/user")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-//    @PostMapping("/register")
-//    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
-//        User newUser = userService.registerUser(userDto);
-//        return ResponseEntity.ok(newUser);
-//    }
-
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> loginUser(@RequestBody UserDto userDto) {
-        Map<String, String> tokens = userService.loginUser(userDto);
-        return ResponseEntity.ok(tokens);
-    }
-
-
-    @PostMapping("/refresh-token")
-    public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        Map<String, String> tokens = userService.refreshToken(refreshToken);
-        return ResponseEntity.ok(tokens);
-    }
 
     @GetMapping("/check-username")
     public ResponseEntity<Boolean> checkUsernameExists(@RequestParam String username) {
@@ -47,27 +28,19 @@ public class UserController {
         return ResponseEntity.ok().body(null);
     }
 
-//    @DeleteMapping("/me")
-//    public ResponseEntity<Void> deleteMyAccount(
-//            @AuthenticationPrincipal UserDetails principal,
-//            @RequestBody @Valid DeleteAccountRequest request) {
-//        // principal.getUsername() == 이메일이라고 가정 (프로젝트 규칙에 맞게 조정)
-//        userService.deleteAccountByUsername(principal.getUsername(), request);
-//        return ResponseEntity.noContent().build();
-//    }
-
-
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
 
+    // 전체 사용자 목록
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {

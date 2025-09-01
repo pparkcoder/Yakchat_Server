@@ -17,6 +17,7 @@ import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
 import com.kaidey.yakchatproject.global.exception.*;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AnswerService {
 
     private final AnswerRepository answerRepository;
@@ -40,23 +42,6 @@ public class AnswerService {
     private final ImageUtils imageUtils = new ImageUtils();
     private static final Logger log = LoggerFactory.getLogger(AnswerController.class);
 
-
-    @Autowired
-    public AnswerService(AnswerRepository answerRepository,
-                           QuestionRepository questionRepository,
-                           UserRepository userRepository,
-                           LikeRepository likeRepository,
-                           ImageRepository imageRepository,
-                           ImageService imageService,
-                           UserService userService) {
-        this.answerRepository = answerRepository;
-        this.questionRepository = questionRepository;
-        this.userRepository = userRepository;
-        this.likeRepository = likeRepository;
-        this.imageRepository = imageRepository;
-        this.imageService = imageService;
-        this.userService = userService;
-    }
 
     // 답변 생성
     @Transactional
@@ -186,7 +171,7 @@ public class AnswerService {
         answer.setIsAccepted(true);
         answerRepository.save(answer);
 
-        // 답변 작성자의 활동 점수 업데이트 (예: 채택된 답변 개수 증가)
+
         userService.incrementAcceptedCount(answer.getUser(), 1);
     }
 

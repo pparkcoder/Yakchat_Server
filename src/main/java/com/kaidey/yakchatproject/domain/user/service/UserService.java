@@ -9,6 +9,7 @@ import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.*;
 
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
@@ -25,16 +27,6 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserGradeRepository userGradeRepository;
     private final GradeService gradeService;
-
-    public UserService(UserRepository userRepository, GradeService gradeService,
-                       PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider,
-                       UserGradeRepository userGradeRepository) {
-        this.userRepository = userRepository;
-        this.gradeService = gradeService;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userGradeRepository = userGradeRepository;
-    }
 
     // 사용자 등록
     @Transactional
@@ -81,8 +73,8 @@ public class UserService {
             throw new BusinessException(UserErrorCode.NOT_MATCHES_PASSWORD);
         }
 
-        String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername(), user.getId());
+        String token = jwtTokenProvider.generateToken(user.getNickname(), user.getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getNickname(), user.getId());
         Map<String, String> tokens = new HashMap<>();
         tokens.put("access_token", token);
         tokens.put("refresh_token", refreshToken);
@@ -120,6 +112,7 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
+    // 이메일 중복 체크 및 유효성 검사
     public void emailExists(String email) {
         if (email == null || email.isBlank()) {
             throw new BusinessException(UserErrorCode.INVALID_EMAIL);   // ← 추가
@@ -174,6 +167,8 @@ public class UserService {
         }
     }
 
+
+    //질문·답변 활동 기록을 갱신, 등급 업데이트까지 처리
     @Transactional
     public void updateUserActivity(User user, int questionDelta, int answerDelta) {
         try {
@@ -188,6 +183,7 @@ public class UserService {
         }
     }
 
+    // 채택된 답변 수만 증가시키는 단순 카운트 증가용 메서드
     @Transactional
     public void incrementAcceptedCount(User user, int delta) {
         UserGrade g = userGradeRepository.findByUserId(user.getId())

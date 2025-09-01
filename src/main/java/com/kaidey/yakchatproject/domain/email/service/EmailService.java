@@ -9,6 +9,7 @@ import com.kaidey.yakchatproject.global.util.RedisUtil;
 import com.kaidey.yakchatproject.domain.auth.service.OcrVerificationService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmailService {
 
     private final RedisUtil redisUtil;
@@ -33,14 +35,7 @@ public class EmailService {
     @Value("${redis.ttl.email-code}")      // 3분
     private long emailCodeTtlSeconds;
 
-    @Autowired
-    public EmailService(RedisUtil redisUtil, JavaMailSender mailSender,
-                        OcrVerificationService ocrVerificationService, UserService userService) {
-        this.redisUtil = redisUtil;
-        this.mailSender = mailSender;
-        this.ocrVerificationService = ocrVerificationService;
-        this.userService = userService;
-    }
+
 
     // 숫자 6자리 인증 코드 생성
     private String createdCode() {

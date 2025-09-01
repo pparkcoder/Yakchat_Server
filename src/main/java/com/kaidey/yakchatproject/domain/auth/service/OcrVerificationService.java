@@ -10,6 +10,7 @@ import com.kaidey.yakchatproject.domain.s3.service.S3ServiceV2;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.OcrErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -25,6 +26,7 @@ import java.util.*;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OcrVerificationService {
 
     private final RestTemplate restTemplate;
@@ -43,18 +45,9 @@ public class OcrVerificationService {
     private long ocrTempTtl;
 
     private static final String OCR_TEMP_PREFIX = "ocr:temp:";
-    // TTL은 Redis의 TTL을 신뢰 (yml: redis.ttl.ocr-temp)
 
-    public OcrVerificationService(RestTemplate restTemplate, RedisUtil redisUtil,
-                                  S3ServiceV2 s3Service, ObjectMapper objectMapper,
-                                  OcrValidationService ocrValidationService) {
-        this.restTemplate = restTemplate;
-        this.redisUtil = redisUtil;
-        this.s3Service = s3Service;
-        this.objectMapper = objectMapper;
-        this.ocrValidationService = ocrValidationService;
-    }
 
+    // 문서 인증 및 임시 토큰 발급
     public OcrVerificationResponse verifyDocument(MultipartFile file, String documentType) {
         try {
             validateDocumentType(documentType);
@@ -88,6 +81,7 @@ public class OcrVerificationService {
         }
     }
 
+    // OCR API 호출
     private JsonNode callOcrApi(MultipartFile file, String documentType) {
         try {
             String endpoint = documentType.equals("student") ? "/ocr/student" : "/ocr/professional";
@@ -111,6 +105,7 @@ public class OcrVerificationService {
         }
     }
 
+    // OCR 결과에서 필드 추출
     private OcrFieldsDto extractFieldsFromOcrResult(JsonNode ocrResult, String documentType) {
         OcrFieldsDto f = new OcrFieldsDto();
         JsonNode n = ocrResult.path("fields");
@@ -201,6 +196,7 @@ public class OcrVerificationService {
             throw new BusinessException(OcrErrorCode.TEMP_TOKEN_NOT_FOUND.toErrorCode());
     }
 
+
     private void validatePharmacyQualification(JsonNode ocrResult, String documentType) {
         String fullText = ocrResult.path("text").asText("");
         Map<String,Object> fields = objectMapper.convertValue(ocrResult.path("fields"), new TypeReference<Map<String,Object>>(){});
@@ -213,6 +209,7 @@ public class OcrVerificationService {
         if (!ok) throw new BusinessException(OcrErrorCode.TEMP_TOKEN_NOT_FOUND.toErrorCode());
     }
 
+    // 파일명 생성 (UUID + timestamp + 확장자)
     private String generateFileName(String documentType, String contentType) {
         String ext = "jpg";
         if ("image/png".equalsIgnoreCase(contentType)) ext = "png";

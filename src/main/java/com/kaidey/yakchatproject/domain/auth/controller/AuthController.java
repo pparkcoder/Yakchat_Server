@@ -71,6 +71,21 @@ public class AuthController {
         return ResponseEntity.ok(newUser);
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, String>> loginUser(@RequestBody UserDto userDto) {
+        Map<String, String> tokens = userService.loginUser(userDto);
+        return ResponseEntity.ok(tokens);
+    }
+
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        Map<String, String> tokens = userService.refreshToken(refreshToken);
+        return ResponseEntity.ok(tokens);
+    }
+
+
     private UserDto createUserDtoFromOcrData(CompleteRegistrationRequest req, Map<String, Object> ocrData) {
         UserDto dto = new UserDto();
         dto.setNickname(req.getNickname());

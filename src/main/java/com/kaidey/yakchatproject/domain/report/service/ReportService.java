@@ -7,6 +7,7 @@ import com.kaidey.yakchatproject.domain.report.entity.ReportStatus;
 import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
 import com.kaidey.yakchatproject.domain.report.repository.ReportRepository;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,16 +16,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ReportService {
 
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
-
-    @Autowired
-    public ReportService(ReportRepository reportRepository, UserRepository userRepository) {
-        this.reportRepository = reportRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public ReportDto createReport(ReportDto reportDto) {
