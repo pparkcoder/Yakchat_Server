@@ -1,6 +1,8 @@
 package com.kaidey.yakchatproject.domain.user.controller;
 
 import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
+import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeRequest;
+import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.service.ProfileService;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
 import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
@@ -10,9 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -43,6 +43,24 @@ public class ProfileController {
         ProfileDto profile = profileService.getProfile(userId);
         return ResponseEntity.ok(profile);
     }
+
+    // ProfileController.java (추가)
+    @PatchMapping("/me/nickname")
+    public ResponseEntity<NicknameChangeResponse> changeMyNickname(
+            @RequestHeader("Authorization") String token,
+            @RequestBody NicknameChangeRequest request) {
+        Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
+        NicknameChangeResponse resp = profileService.changeNickname(userId, request.getNickname());
+        return ResponseEntity.ok(resp);
+    }
+
+    // 닉네임 가용성 체크
+    @GetMapping("/nicknames/availability")
+    public ResponseEntity<Map<String, Boolean>> checkNicknameAvailability(@RequestParam String nickname) {
+        boolean available = profileService.isNicknameAvailable(nickname);
+        return ResponseEntity.ok(Map.of("available", available));
+    }
+
 
     // 프로필 업데이트 (이미지 및 기타 데이터)
 //    @PutMapping

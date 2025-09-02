@@ -1,41 +1,26 @@
 package com.kaidey.yakchatproject.domain.user.controller;
 
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
+import com.kaidey.yakchatproject.domain.user.dto.PromotionDto;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
+import com.kaidey.yakchatproject.domain.user.dto.DeleteAccountRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/user")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
-        User newUser = userService.registerUser(userDto);
-        return ResponseEntity.ok(newUser);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> loginUser(@RequestBody UserDto userDto) {
-        Map<String, String> tokens = userService.loginUser(userDto);
-        return ResponseEntity.ok(tokens);
-    }
-
-
-    @PostMapping("/refresh-token")
-    public ResponseEntity<Map<String, String>> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        Map<String, String> tokens = userService.refreshToken(refreshToken);
-        return ResponseEntity.ok(tokens);
-    }
 
     @GetMapping("/check-username")
     public ResponseEntity<Boolean> checkUsernameExists(@RequestParam String username) {
@@ -49,11 +34,13 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    // 전체 사용자 목록
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
@@ -66,4 +53,18 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    // 특정 사용자 승급 정보
+    @GetMapping("/{id}/promotion")
+    public ResponseEntity<PromotionDto> getPromotion(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getPromotion(id));
+    }
+
+    // 로그인 사용자 승급 정보
+    @GetMapping("/me/promotion")
+    public ResponseEntity<PromotionDto> getMyPromotion(@AuthenticationPrincipal User me) {
+        return ResponseEntity.ok(userService.getPromotion(me.getId()));
+    }
+
+    
 }

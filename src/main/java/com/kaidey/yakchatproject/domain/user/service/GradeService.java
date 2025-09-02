@@ -2,37 +2,66 @@ package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.entity.UserGrade;
 import com.kaidey.yakchatproject.domain.user.entity.GradeType;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GradeService {
 
-    public GradeType calculateGrade(UserGrade userGrade) {
-        int questions = userGrade.getQuestionCount();
-        int accepted = userGrade.getAcceptedCount();
-        int likes = userGrade.getLikeCount();
-        int purchases = userGrade.getPurchasedMaterialCount();
-        int sales = userGrade.getSoldMaterialCount();
+    public GradeType calculateGrade(UserGrade g) {
+        int q = g.getQuestionCount();
+        int a = g.getAnswerCount();
+        int sum = q + a;
 
-        if ((questions >= 1000 || (accepted >= 500 && likes >= 5000)) || sales >= 5000 || purchases >= 200) {
-            return GradeType.GOLD;
-        } else if ((questions >= 500 || (accepted >= 300 && likes >= 3000)) || sales >= 1000 || purchases >= 100) {
-            return GradeType.BLACK;
-        } else if ((questions >= 150 || (accepted >= 100 && likes >= 1000)) || sales >= 500 || purchases >= 30) {
-            return GradeType.RED;
-        } else if ((questions >= 75 || (accepted >= 50 && likes >= 500)) || sales >= 200 && purchases >= 15) {
-            return GradeType.ORANGE;
-        } else if ((questions >= 30 || (accepted >= 20 && likes >= 100)) || sales >= 50 || purchases >= 6) {
-            return GradeType.YELLOW;
-        } else if ((questions >= 10 || (accepted >= 5 && likes >= 10)) || sales >= 10 || purchases >= 2) {
-            return GradeType.GREEN;
-        } else if (questions >= 5 || purchases >= 1) {
-            return GradeType.BLUE;
-        }
-        return GradeType.GRAY;
+        if (sum >= 100) return GradeType.MYEONGYAK;
+        if (sum >= 40)  return GradeType.GOSU;
+        if (q >= 15 || a >= 15) return GradeType.DUAL;
+        if (q >= 5  || a >= 5)  return GradeType.HANAL;
+        if (q >= 1  || a >= 1)  return GradeType.SESSAK;
+        return GradeType.NONE;
     }
 
     public void updateUserGrade(UserGrade userGrade) {
         userGrade.setGrade(calculateGrade(userGrade));
     }
+
+    public NextPromotion getNextPromotion(UserGrade g) {
+        int q = g.getQuestionCount();
+        int a = g.getAnswerCount();
+        int sum = q + a;
+
+        switch (g.getGrade()) {
+            case NONE:
+                return new NextPromotion(GradeType.SESSAK, 1, Math.max(q, a));
+            case SESSAK:
+                return new NextPromotion(GradeType.HANAL, 5, Math.max(q, a));
+            case HANAL:
+                return new NextPromotion(GradeType.DUAL, 15, Math.max(q, a));
+            case DUAL:
+                return new NextPromotion(GradeType.GOSU, 40, sum);
+            case GOSU:
+                return new NextPromotion(GradeType.MYEONGYAK, 100, sum);
+            case MYEONGYAK:
+            default:
+                return new NextPromotion(null, 0, 0);
+        }
+    }
+
+    @Getter
+    public static class NextPromotion {
+        private final GradeType nextGrade;
+        private final int target;
+        private final int progress;
+
+        public NextPromotion(GradeType nextGrade, int target, int progress) {
+            this.nextGrade = nextGrade;
+            this.target = target;
+            this.progress = progress;
+        }
+
+        public double progressRate() {
+            return (target == 0) ? 1.0 : Math.min(1.0, (double) progress / target);
+        }
+    }
+
 }

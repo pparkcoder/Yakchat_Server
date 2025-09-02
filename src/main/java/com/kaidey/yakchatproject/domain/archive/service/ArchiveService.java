@@ -11,6 +11,7 @@ import com.kaidey.yakchatproject.domain.scrap.entity.Scrap;
 import com.kaidey.yakchatproject.domain.scrap.repository.ScrapRepository;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.global.exception.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.web.OffsetScrollPositionArgumentResolver;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ArchiveService {
 
     private final UserRepository userRepository;
@@ -27,19 +29,6 @@ public class ArchiveService {
     private final AnswerRepository answerRepository;
     private final ScrapRepository scrapRepository;
     private final OffsetScrollPositionArgumentResolver offsetScrollPositionArgumentResolver;
-
-    @Autowired
-    public ArchiveService(UserRepository userRepository
-            , QuestionRepository questionRepository
-            , ScrapRepository scrapRepository
-            , AnswerRepository answerRepository
-            , OffsetScrollPositionArgumentResolver offsetScrollPositionArgumentResolver) {
-        this.userRepository = userRepository;
-        this.questionRepository = questionRepository;
-        this.answerRepository = answerRepository;
-        this.scrapRepository = scrapRepository;
-        this.offsetScrollPositionArgumentResolver = offsetScrollPositionArgumentResolver;
-    }
 
     // 질문 스크랩
     @Transactional

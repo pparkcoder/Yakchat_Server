@@ -22,7 +22,7 @@ import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.QuestionErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
@@ -44,18 +45,6 @@ public class QuestionService {
     private final ImageUtils imageUtils = new ImageUtils();
     private final ImageService imageService;
 
-    @Autowired
-    public QuestionService(QuestionRepository questionRepository, SubjectRepository subjectRepository,
-                             UserRepository userRepository, LikeRepository likeRepository, UserService userService,
-                             AnswerRepository answerRepository, ImageService imageService) {
-        this.questionRepository = questionRepository;
-        this.answerRepository = answerRepository;
-        this.subjectRepository = subjectRepository;
-        this.userRepository = userRepository;
-        this.likeRepository = likeRepository;
-        this.userService = userService;
-        this.imageService = imageService;
-    }
 
     // 질문 생성
     @Transactional
@@ -72,8 +61,6 @@ public class QuestionService {
         question.setSubject(subject);
         question.setUser(user);
 
-        // 등업을 위한 로직
-        userService.updateUserActivity(user, 1, 0, 0, 0, 0);
 
         // 이미지가 있으면 미리 리스트에 추가
         if (keys != null && !keys.isEmpty()) {
@@ -82,7 +69,7 @@ public class QuestionService {
         }
 
         Question savedQuestion = questionRepository.save(question);
-
+        userService.updateUserActivity(user, 1, 0);
         return convertToDto(savedQuestion);
     }
 

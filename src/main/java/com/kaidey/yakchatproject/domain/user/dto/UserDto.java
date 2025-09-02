@@ -1,5 +1,6 @@
 package com.kaidey.yakchatproject.domain.user.dto;
 
+import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,13 +11,12 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class UserDto {
-    private Long id;
-    private String username; // 아이디
-    private String password; // 비밀번호 (암호화된 형태로 저장될 것)
+    private String realName;
+    private String nickname;
+    private String email;
+    private String password;
     private String school;
     private String grade;
-    private Integer age;
-    private Boolean isActive;
-    private LocalDateTime createdAt; // 등록 날짜
-    private LocalDateTime lastLoginAt; // 마지막 로그인
+//    private Integer age;
+    private UserType userType;
 }
