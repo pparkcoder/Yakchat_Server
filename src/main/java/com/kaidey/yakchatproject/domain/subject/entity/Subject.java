@@ -1,33 +1,43 @@
 package com.kaidey.yakchatproject.domain.subject.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kaidey.yakchatproject.domain.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
+
 import java.util.List;
 
-@Entity
-@Getter
-@Setter
-@NoArgsConstructor
-public class Subject {
 
+@Entity
+@Table(name = "subject")
+@Getter @Setter
+public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "subject_id")
     private Long id;
 
+
+    @Column(length = 32, unique = true, nullable = false)
+    private String code; // 예: IND-PHARM
+
+
+    @Column(length = 100, nullable = false)
+    private String name; // 라벨
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private SubjectCategory category;
+
+
     @Column(nullable = false)
-    private String name;
+    private boolean active = true;
 
-    @BatchSize(size = 100)
-    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Question> questions = new ArrayList<>();
 
+    // 태그(선택). 검색이나 필터에 활용 가능. 필요 없으면 제거 가능
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private List<String> tags;
 }

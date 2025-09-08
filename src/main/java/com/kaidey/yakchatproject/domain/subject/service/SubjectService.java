@@ -1,58 +1,66 @@
 package com.kaidey.yakchatproject.domain.subject.service;
 
-import com.kaidey.yakchatproject.domain.subject.dto.SubjectDto;
 import com.kaidey.yakchatproject.domain.subject.entity.Subject;
 import com.kaidey.yakchatproject.domain.subject.repository.SubjectRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
-
 @Service
+@RequiredArgsConstructor
 public class SubjectService {
+    private final SubjectRepository subjectRepo;
 
-    @Autowired
-    private SubjectRepository subjectRepository;
+    // UI용 과목 목록 조회
+    public Map<String, Object> listForUi(boolean activeOnly) {
+        List<Subject> list = activeOnly
+                ? subjectRepo.findByActiveTrueOrderByCategory_SortOrderAscCodeAsc()
+                : subjectRepo.findAll();
 
-    // 과목 생성
-    public Subject createSubject(SubjectDto subjectDto) {
-        Subject subject = new Subject();
-        subject.setName(subjectDto.getName());
-        return subjectRepository.save(subject);
+        Map<String, List<Subject>> grouped = list.stream().collect(
+                Collectors.groupingBy(s -> s.getCategory().getCode(), LinkedHashMap::new, Collectors.toList())
+        );
+
+        List<Map<String, Object>> sections = new ArrayList<>();
+        for (Map.Entry<String, List<Subject>> e : grouped.entrySet()) {
+            String sectionCode = e.getKey();
+            List<Subject> subs = e.getValue();
+            if (subs.isEmpty()) continue;
+            String title = subs.get(0).getCategory().getName();
+
+            List<Map<String, String>> items = subs.stream().map(s -> Map.of(
+                    "code", s.getCode(),
+                    "label", s.getName()
+            )).collect(Collectors.toList());
+
+            sections.add(Map.of(
+                    "sectionCode", sectionCode,
+                    "sectionTitle", title,
+                    "items", items
+            ));
+        }
+        return Map.of("sections", sections);
     }
 
-    // 특정 과목 조회
-    public SubjectDto getSubjectById(Long id) {
-        Subject subject = subjectRepository.findById(id).orElseThrow(() -> new RuntimeException("Subject not found"));
-        return convertToDto(subject);
+    // 검색어로 과목 검색 (활성화된 과목만)
+    public List<Map<String, String>> search(String q) {
+        return subjectRepo.findByNameContainingIgnoreCaseAndActiveTrue(q).stream()
+                .map(s -> Map.of(
+                        "code", s.getCode(),
+                        "label", s.getName(),
+                        "category", s.getCategory().getName()
+                )).toList();
     }
 
-    // 모든 과목 조회
-    public List<SubjectDto> getAllSubjects() {
-        return subjectRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
-    }
-
-    // 과목 업데이트
-    public Subject updateSubject(Long id, SubjectDto subjectDto) {
-        Subject subject = subjectRepository.findById(id).orElseThrow(() -> new RuntimeException("Subject not found"));
-        subject.setName(subjectDto.getName());
-        return subjectRepository.save(subject);
-    }
-
-    // 과목 삭제
-    public void deleteSubject(Long id) {
-        subjectRepository.deleteById(id);
-    }
-
-    private SubjectDto convertToDto(Subject subject) {
-        SubjectDto subjectDto = new SubjectDto();
-        subjectDto.setId(subject.getId());
-        subjectDto.setName(subject.getName());
-//        subjectDto.setQuestionIds(subject.getQuestions().stream().map(Question::getId).collect(Collectors.toList()));
-//        subjectDto.setImageIds(subject.getImages().stream().map(Image::getId).collect(Collectors.toList()));
-        return subjectDto;
+    // 코드로 과목 조회
+    public Subject getByCode(String code) {
+        return subjectRepo.findByCode(code)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }
+

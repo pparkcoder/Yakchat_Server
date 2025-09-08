@@ -21,4 +21,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
         return user; // Return the custom User class
     }
+
+    public UserDetails loadUserById(Long id) throws UsernameNotFoundException {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found id=" + id));
+    }
 }
