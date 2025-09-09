@@ -8,5 +8,5 @@ import java.util.List;
 public record StudentOnboardingRes(
         Long userId,
         boolean completed,
-        Integer profileVersion
+        Long profileVersion
 ) {}

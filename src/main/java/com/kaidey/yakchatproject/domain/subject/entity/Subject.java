@@ -14,29 +14,25 @@ import java.util.List;
 @Table(name = "subject")
 @Getter @Setter
 public class Subject {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "subject_id")   // ★ DB의 PK 이름과 일치시킴
     private Long id;
 
-
     @Column(length = 32, unique = true, nullable = false)
-    private String code; // 예: IND-PHARM
-
+    private String code;           // UK와 일치
 
     @Column(length = 100, nullable = false)
-    private String name; // 라벨
-
+    private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false) // FK와 일치
     private SubjectCategory category;
 
-
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean active = true; // MySQL bit(1) ←→ boolean 매핑 OK
 
-
-    // 태그(선택). 검색이나 필터에 활용 가능. 필요 없으면 제거 가능
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private List<String> tags;
