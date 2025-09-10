@@ -29,6 +29,10 @@ public class OnboardingController {
     @PutMapping("/student")
     public StudentOnboardingRes upsertStudent(@RequestBody @Valid StudentOnboardingReq req) {
         Long userId = AuthUtil.currentUserId();
+        User user = userService.getUserById(userId);
+        if (user.getUserType() != UserType.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only students can access this API");
+        }
         return studentSvc.upsert(userId, req);
     }
 
@@ -52,7 +56,7 @@ public class OnboardingController {
     }
 
 
-    @PutMapping("/expert")
+    @PutMapping("/professional")
     public ExpertOnboardingRes upsertExpert(@RequestBody @Valid ExpertOnboardingReq req) {
         Long userId = AuthUtil.currentUserId();
         User user = userService.getUserById(userId);
@@ -62,7 +66,7 @@ public class OnboardingController {
         return expertSvc.upsert(userId, req);
     }
 
-    @GetMapping("/expert")
+    @GetMapping("/professional")
     public ResponseEntity<ExpertProfileRes> getExpert() {
         Long userId = AuthUtil.currentUserId();
         User user = userService.getUserById(userId);
@@ -85,27 +89,52 @@ public class OnboardingController {
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    public record StudentProfileRes(
-            Long userId,
-            String grade,
-            Integer age,
-            List<String> studyDays,
-            List<StudyTime> studyTimes,
-            List<String> weakSubjects,
-            List<String> strongSubjects,
-            List<StudentCourseEntry> courses,
-            Long version
-    ) {}
 
-    public record ExpertProfileRes(
-            Long userId,
-            String job,
-            String workplace,
-            List<String> strongSubjects,
-            List<String> availableDays,
-            List<StudyTime> availableTimes,
-            String answerCycle,
-            Integer avgAnswerCount,
-            Long version
-    ) {}
+    @GetMapping("/me")
+    public ResponseEntity<OnboardingMeRes> getMyOnboarding() {
+        Long userId = AuthUtil.currentUserId();
+        User user = userService.getUserById(userId);
+
+        if (user.getUserType() == UserType.STUDENT) {
+            return studentSvc.get(userId)
+                    .map(p -> new OnboardingMeRes(
+                            UserType.STUDENT,
+                            new StudentProfileRes(
+                                    p.getUserId(),
+                                    p.getGrade(),
+                                    p.getAge(),
+                                    p.getStudyDays(),
+                                    p.getStudyTimes(),
+                                    p.getWeakSubjects(),
+                                    p.getStrongSubjects(),
+                                    p.getCourses(),
+                                    p.getVersion()
+                            ),
+                            null
+                    ))
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } else { // PROFESSIONAL
+            return expertSvc.get(userId)
+                    .map(p -> new OnboardingMeRes(
+                            UserType.PROFESSIONAL,
+                            null,
+                            new ExpertProfileRes(
+                                    p.getUserId(),
+                                    p.getJob(),
+                                    p.getWorkplace(),
+                                    p.getStrongSubjects(),
+                                    p.getAvailableDays(),
+                                    p.getAvailableTimes(),
+                                    p.getAnswerCycle(),
+                                    p.getAvgAnswerCount(),
+                                    p.getVersion()
+                            )
+                    ))
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        }
+    }
+
+
 }

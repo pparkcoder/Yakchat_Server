@@ -106,6 +106,8 @@ public class ProfileService {
         profileDto.setId(user.getId());
         profileDto.setUsername(user.getUsername());
         profileDto.setSchool(user.getSchool());
+        profileDto.setGrade(user.getUserGrade());
+        profileDto.setUserType(user.getUserType());
         profileDto.setImages(imageUtils.convertToImageDtos(user.getImages()));
         return profileDto;
     }

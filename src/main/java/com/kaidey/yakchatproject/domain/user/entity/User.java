@@ -58,7 +58,7 @@ public class User implements UserDetails {
     private StudentProfile studentProfile;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private UserGrade userGrade;
+    private UserGrade userGrade; //
 
     @BatchSize(size = 100)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -84,29 +84,19 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getUsername() {
-        return username;
-    }
+    public String getUsername() {return username;}
 
     @Override
-    public String getPassword() {
-        return password;
-    }
+    public String getPassword() {return password;}
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() {return true;}
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() {return true;}
 
     @Override
-    public boolean isEnabled() {
-        return isActive;
-    }
+    public boolean isEnabled() {return isActive;}
 
 
 }

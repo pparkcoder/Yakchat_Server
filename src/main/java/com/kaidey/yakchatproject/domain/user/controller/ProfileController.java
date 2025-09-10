@@ -44,7 +44,7 @@ public class ProfileController {
         return ResponseEntity.ok(profile);
     }
 
-    // ProfileController.java (추가)
+    // 닉네임 변경
     @PatchMapping("/me/nickname")
     public ResponseEntity<NicknameChangeResponse> changeMyNickname(
             @RequestHeader("Authorization") String token,
