@@ -1,0 +1,8 @@
+package com.kaidey.yakchatproject.domain.onboarding.entity;
+
+public enum StudyTime {
+    오전,   // 06:00 ~ 12:00
+    오후,   // 12:00 ~ 18:00
+    저녁,   // 18:00 ~ 24:00
+    새벽    // 00:00 ~ 06:00
+}

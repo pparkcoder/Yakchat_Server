@@ -2,6 +2,7 @@ package com.kaidey.yakchatproject.domain.user.entity;
 
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
+import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -46,12 +47,6 @@ public class User implements UserDetails {
     private String school;
 
     @Column(nullable = false)
-    private String grade; // 학교 학년 (등급과 별개)
-
-//    @Column(nullable = false)
-//    private Integer age;
-
-    @Column(nullable = false)
     private Boolean isActive = true;
 
     @Column(nullable = false, updatable = false)
@@ -60,7 +55,10 @@ public class User implements UserDetails {
     private LocalDateTime lastLoginAt;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private UserGrade userGrade;
+    private StudentProfile studentProfile;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private UserGrade userGrade; //
 
     @BatchSize(size = 100)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -86,29 +84,19 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getUsername() {
-        return username;
-    }
+    public String getUsername() {return username;}
 
     @Override
-    public String getPassword() {
-        return password;
-    }
+    public String getPassword() {return password;}
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() {return true;}
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() {return true;}
 
     @Override
-    public boolean isEnabled() {
-        return isActive;
-    }
+    public boolean isEnabled() {return isActive;}
 
 
 }

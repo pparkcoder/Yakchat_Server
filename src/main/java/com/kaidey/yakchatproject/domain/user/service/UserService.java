@@ -50,7 +50,6 @@ public class UserService {
         user.setEmail(userDto.getEmail());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setSchool(userDto.getSchool());
-        user.setGrade(userDto.getGrade());
         user.setUserType(type);
 
         Set<RoleType> roles = new HashSet<>();
@@ -141,7 +140,6 @@ public class UserService {
             user.setUsername(userDto.getRealName());
             user.setPassword(passwordEncoder.encode(userDto.getPassword()));
             user.setSchool(userDto.getSchool());
-            user.setGrade(userDto.getGrade());
             if (userDto.getUserType() != null) {
                 user.setUserType(userDto.getUserType());
             }
