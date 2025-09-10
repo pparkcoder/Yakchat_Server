@@ -9,16 +9,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
-@Service
 
+@Service
 @RequiredArgsConstructor
 public class StudentOnboardingService {
     private final StudentProfileRepository studentProfileRepository;
-    private final UserRepository userRepo;
+    private final UserRepository userRepository;
 
     @Transactional
     public StudentOnboardingRes upsert(Long userId, StudentOnboardingReq req) {
-        var userRef = userRepo.getReferenceById(userId);
+        var userRef = userRepository.getReferenceById(userId);
 
         StudentProfile p = studentProfileRepository.findById(userId).orElseGet(() -> {
             StudentProfile np = new StudentProfile();
@@ -26,29 +26,37 @@ public class StudentOnboardingService {
             return np;
         });
 
-        if (req.weakSubjects() != null && req.weakSubjects().size() > 5)
-            throw new IllegalArgumentException("weakSubjects limit exceeded (<=5)");
-        if (req.strongSubjects() != null && req.strongSubjects().size() > 5)
-            throw new IllegalArgumentException("strongSubjects limit exceeded (<=5)");
+        // null-safe 리스트들
+        var weak = req.weakSubjects() == null ? List.<String>of() : req.weakSubjects();
+        var strong = req.strongSubjects() == null ? List.<String>of() : req.strongSubjects();
+        var days = req.studyDays() == null ? List.<String>of() : req.studyDays();
+        var times = req.studyTimes() == null ? List.<StudyTime>of() : req.studyTimes();
+        var coursesReq = req.courses() == null ? List.<StudentCourseDto>of() : req.courses();
+
+        if (weak.size() > 5) throw new IllegalArgumentException("weakSubjects limit exceeded (<=5)");
+        if (strong.size() > 5) throw new IllegalArgumentException("strongSubjects limit exceeded (<=5)");
 
         // 값 매핑
         p.setGrade(req.grade());
         p.setAge(req.age());
-        p.setStudyDays(req.studyDays());
-        p.setStudyTimes(req.studyTimes());
-        p.setWeakSubjects(req.weakSubjects());
-        p.setStrongSubjects(req.strongSubjects());
+        p.setStudyDays(days);
+        p.setStudyTimes(times);
+        p.setWeakSubjects(weak);
+        p.setStrongSubjects(strong);
         p.setCourses(
-                req.courses().stream()
+                coursesReq.stream()
                         .map(c -> new StudentCourseEntry(c.year(), c.subjects(), c.customSubjects()))
                         .toList()
         );
 
-        studentProfileRepository.save(p); // 신규면 persist, 기존이면 update
+        studentProfileRepository.saveAndFlush(p);
 
         return new StudentOnboardingRes(userId, true, p.getVersion());
+
     }
 
     @Transactional(readOnly = true)
-    public Optional<StudentProfile> get(Long userId) { return studentProfileRepository.findById(userId); }
+    public Optional<StudentProfile> get(Long userId) {
+        return studentProfileRepository.findById(userId);
+    }
 }

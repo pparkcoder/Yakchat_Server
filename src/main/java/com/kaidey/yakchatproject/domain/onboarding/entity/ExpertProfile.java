@@ -38,5 +38,5 @@ public class ExpertProfile {
 
     private Integer avgAnswerCount;
 
-    private Integer version;
+    private Long version;
 }

@@ -16,6 +16,7 @@ public class ProfileDto {
     private Integer age;
     private String school;
     private String grade;
+
 //    private String ProfileImage;
 //    private String ProfileImageUrl;
     private List<ImageDto> images;

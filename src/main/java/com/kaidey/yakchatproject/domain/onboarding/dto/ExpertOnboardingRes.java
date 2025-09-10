@@ -8,5 +8,5 @@ import java.util.List;
 public record ExpertOnboardingRes(
         Long userId,
         boolean completed,
-        Integer profileVersion
+        Long profileVersion
 ) {}
