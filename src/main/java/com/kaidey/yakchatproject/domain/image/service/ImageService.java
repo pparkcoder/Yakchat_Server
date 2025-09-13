@@ -1,7 +1,9 @@
 package com.kaidey.yakchatproject.domain.image.service;
 
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
+import com.kaidey.yakchatproject.domain.image.entity.ImageType;
 import com.kaidey.yakchatproject.domain.question.entity.Question;
+import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.ImageErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +38,8 @@ public class ImageService {
             // ImageDto로 변환
             ImageDto imageDto = new ImageDto();
             imageDto.setId(image.getId());
-            imageDto.setMime(image.getMime());
             //imageDto.setUrl("/images/" + image.getStoreFileName());
-            imageDto.setKey("");
+            imageDto.setUrlKey(image.getUrlKey());
             return imageDto;
         } else {
             throw new BusinessException(ImageErrorCode.NOT_FOUND_IMAGE);
@@ -52,6 +53,7 @@ public class ImageService {
             Image image = new Image();
             image.setUser(question.getUser());
             image.setQuestion(question);
+            image.setImageType(ImageType.Q);
             image.setUrlKey(key);
             //image.setStepIndex(i); // 프로필 이미지는 StepIndex를 따로 사용하지 않음
             imageList.add(image);
@@ -66,6 +68,21 @@ public class ImageService {
             Image image = new Image();
             image.setUser(answer.getUser());
             image.setAnswer(answer);
+            image.setImageType(ImageType.A);
+            image.setUrlKey(key);
+            imageList.add(image);
+        }
+
+        return imageRepository.saveAll(imageList);
+    }
+
+    // 프뢰필 이미지 저장
+    public List<Image> saveProfileImages(List<String> keys, User user) {
+        List<Image> imageList = new ArrayList<>();
+        for (String key : keys) {
+            Image image = new Image();
+            image.setUser(user);
+            image.setImageType(ImageType.P);
             image.setUrlKey(key);
             imageList.add(image);
         }
@@ -84,5 +101,9 @@ public class ImageService {
     private String extractExt(String originalFileName) {
         int index = originalFileName.lastIndexOf(".");
         return originalFileName.substring(index + 1);
+    }
+
+    public List<Image> getProfileImage(Long userId) {
+        return imageRepository.findByUserIdAndImageType(userId, ImageType.P);
     }
 }

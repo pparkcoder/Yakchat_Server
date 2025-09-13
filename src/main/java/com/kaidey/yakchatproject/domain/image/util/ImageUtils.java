@@ -47,7 +47,7 @@ public class ImageUtils {
                 ImageDto imageDto = new ImageDto();
 //                imageDto.setStoreFileName(fileName);
 //                imageDto.setUrl(imageUrl);
-                imageDto.setMime(mime);
+
 
                 // 결과 리스트에 추가
                 imageDtos.add(imageDto);
@@ -70,7 +70,7 @@ public class ImageUtils {
                 ImageDto imageDto = new ImageDto();
 //                imageDto.setStoreFileName(fileName);
 //                imageDto.setUrl(imageUrl);
-                imageDto.setMime(mime);
+
                 imageDtos.add(imageDto);
             }
             else if (parts[0].contains("data:image")) {
@@ -140,13 +140,7 @@ public class ImageUtils {
         for (Image image : images) {
             ImageDto imageDto = new ImageDto();
             imageDto.setId(image.getId());
-//            imageDto.setOriginalFileName(image.getOriginalFileName());
-//            imageDto.setStoreFileName(image.getStoreFileName());
-//            imageDto.setUrl(image.getUrl());
-//            imageDto.setUserId(image.getUser() != null ? image.getUser().getId() : null);
-//            imageDto.setAnswerId(image.getAnswer() != null ? image.getAnswer().getId() : null);
-//            imageDto.setQuestionId(image.getQuestion() != null ? image.getQuestion().getId() : null);
-            imageDto.setMime(image.getMime());
+            imageDto.setUrlKey(image.getUrlKey());
             imageDtos.add(imageDto);
         }
         return imageDtos;
