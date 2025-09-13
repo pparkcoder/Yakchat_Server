@@ -34,14 +34,13 @@ public class ProfileController {
         return ResponseEntity.ok(profile);
     }
 
-    // 닉네임 변경
-    @PatchMapping("/me/nickname")
+    // 프로필 업데이트
+    @PutMapping
     public ResponseEntity<NicknameChangeResponse> changeMyNickname(
             @RequestHeader("Authorization") String token,
             @RequestBody NicknameChangeRequest request) {
         Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
         NicknameChangeResponse updatedProfile = profileService.updateProfile(userId, request);
-//        NicknameChangeResponse resp = profileService.changeNickname(userId, request.getNickname());
         return ResponseEntity.ok(updatedProfile);
     }
 

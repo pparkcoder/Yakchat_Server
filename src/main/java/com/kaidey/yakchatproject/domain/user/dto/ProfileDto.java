@@ -16,13 +16,10 @@ public class ProfileDto {
     private Long id;
     private String username;
     private String nickname;
-    private Integer age;
+    private String email;
+    private UserType userType;
     private String school;
     private UserGrade grade;
-    private UserType userType;
-
-//    private String ProfileImage;
-//    private String ProfileImageUrl;
     private List<ImageDto> images;
 
 }

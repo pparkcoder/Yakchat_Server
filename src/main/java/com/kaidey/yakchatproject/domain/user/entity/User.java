@@ -106,10 +106,12 @@ public class User implements UserDetails {
 
     public void update(String nickname) {
         this.nickname = nickname;
+        this.lastNicknameChangedAt = LocalDateTime.now();
     }
 
     public void updateWithImage(String nickname, List<Image> images) {
         this.nickname = nickname;
+        this.lastNicknameChangedAt = LocalDateTime.now();
 
         Iterator<Image> iterator = this.images.iterator();
         while (iterator.hasNext()) {

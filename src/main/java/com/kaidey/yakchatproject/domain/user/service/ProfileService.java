@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -52,8 +54,7 @@ public class ProfileService {
             }
             return new NicknameChangeResponse(
                     user.getNickname(),
-                    user.getLastNicknameChangedAt().toString(),
-                    request.getKeys()
+                    user.getLastNicknameChangedAt().toString()
             );
         } catch (Exception e){
             throw new BusinessException(CommonErrorCode.COMMON_ERROR);
@@ -69,43 +70,44 @@ public class ProfileService {
     }
 
 
-//    @Transactional
-//    public NicknameChangeResponse changeNickname(Long userId, String newNickname) {
-//        if (newNickname == null || newNickname.isBlank()) {
-//            throw new BusinessException(UserErrorCode.NICKNAME_INVALID);
-//        }
-//        if (userRepository.existsByNicknameIgnoreCase(newNickname)) {
-//            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
-//        }
-//
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
-//
-//        // 동일 닉네임이면 에러로 처리(원하면 그냥 OK 반환으로 바꿔도 됨)
-//        if (user.getNickname() != null
-//                && user.getNickname().equalsIgnoreCase(newNickname)) {
-//            throw new BusinessException(UserErrorCode.NICKNAME_SAME_AS_BEFORE);
-//        }
-//
-//        user.setNickname(newNickname);
-//        user.setLastNicknameChangedAt(LocalDateTime.now());
-//        userRepository.save(user);
-//
-//        return new NicknameChangeResponse(
-//                user.getNickname(),
-//                user.getLastNicknameChangedAt().toString()
-//        );
-//    }
+    @Transactional
+    public NicknameChangeResponse changeNickname(Long userId, String newNickname) {
+        if (newNickname == null || newNickname.isBlank()) {
+            throw new BusinessException(UserErrorCode.NICKNAME_INVALID);
+        }
+        if (userRepository.existsByNicknameIgnoreCase(newNickname)) {
+            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+
+        // 동일 닉네임이면 에러로 처리(원하면 그냥 OK 반환으로 바꿔도 됨)
+        if (user.getNickname() != null
+                && user.getNickname().equalsIgnoreCase(newNickname)) {
+            throw new BusinessException(UserErrorCode.NICKNAME_SAME_AS_BEFORE);
+        }
+
+        user.setNickname(newNickname);
+        user.setLastNicknameChangedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return new NicknameChangeResponse(
+                user.getNickname(),
+                user.getLastNicknameChangedAt().toString()
+        );
+    }
 
     private ProfileDto convertToProfileDto(User user, List<Image> images) {
         ProfileDto profileDto = new ProfileDto();
         profileDto.setId(user.getId());
         profileDto.setUsername(user.getUsername());
+        profileDto.setNickname(user.getNickname());
+        profileDto.setEmail(user.getEmail());
         profileDto.setSchool(user.getSchool());
         profileDto.setGrade(user.getUserGrade());
         profileDto.setUserType(user.getUserType());
-        profileDto.setImages(imageUtils.convertToImageDtos(user.getImages()));
-        //profileDto.setImages(imageUtils.convertToImageDtos(images));
+        profileDto.setImages(imageUtils.convertToImageDtos(images));
         return profileDto;
     }
 }
