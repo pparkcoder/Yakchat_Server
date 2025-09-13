@@ -1,10 +1,8 @@
 package com.kaidey.yakchatproject.domain.user.entity;
 
-import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.entity.ImageType;
 import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
-import com.kaidey.yakchatproject.domain.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
