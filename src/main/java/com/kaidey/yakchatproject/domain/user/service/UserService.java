@@ -234,6 +234,7 @@ public class UserService {
             case DUAL -> "두알";
             case GOSU -> "고수";
             case MYEONGYAK -> "명약";
+            case GREEN -> "TEST";
         };
     }
 }

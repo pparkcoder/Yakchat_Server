@@ -1,43 +1,63 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
-import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
+import com.kaidey.yakchatproject.domain.image.service.ImageService;
 import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeRequest;
+import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
 import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
-import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
-import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
+import java.util.List;
 
-import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class ProfileService {
 
     private final UserRepository userRepository;
     private final ImageUtils imageUtils;
+    private final ImageService imageService;
 
-    @Autowired
-    public ProfileService(UserRepository userRepository, ImageUtils imageUtils) {
-        this.userRepository = userRepository;
-        this.imageUtils = imageUtils;
-    }
     @Value("${file.upload-dir}")
     private String uploadDir;
 
     @Transactional
     public ProfileDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        return convertToProfileDto(user);
+        List<Image> findProfileImage = imageService.getProfileImage(userId);
+
+        return convertToProfileDto(user, findProfileImage);
+    }
+
+    @Transactional
+    public NicknameChangeResponse updateProfile(Long userId, NicknameChangeRequest request) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+            if(request.getKeys() != null && !request.getKeys().isEmpty()) {
+                List<Image> images = imageService.saveProfileImages(request.getKeys(), user);
+                user.updateWithImage(request.getNickname(), images);
+            } else{
+                user.update(request.getNickname());
+            }
+            return new NicknameChangeResponse(
+                    user.getNickname(),
+                    user.getLastNicknameChangedAt().toString(),
+                    request.getKeys()
+            );
+        } catch (Exception e){
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 
 
@@ -49,59 +69,35 @@ public class ProfileService {
     }
 
 
-    @Transactional
-    public NicknameChangeResponse changeNickname(Long userId, String newNickname) {
-        if (newNickname == null || newNickname.isBlank()) {
-            throw new BusinessException(UserErrorCode.NICKNAME_INVALID);
-        }
-        if (userRepository.existsByNicknameIgnoreCase(newNickname)) {
-            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
-
-        // 동일 닉네임이면 에러로 처리(원하면 그냥 OK 반환으로 바꿔도 됨)
-        if (user.getNickname() != null
-                && user.getNickname().equalsIgnoreCase(newNickname)) {
-            throw new BusinessException(UserErrorCode.NICKNAME_SAME_AS_BEFORE);
-        }
-
-        user.setNickname(newNickname);
-        user.setLastNicknameChangedAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        return new NicknameChangeResponse(
-                user.getNickname(),
-                user.getLastNicknameChangedAt().toString()
-        );
-    }
-
-
-
-
 //    @Transactional
-//    public ProfileDto updateProfile(Long userId, ProfileDto profileDto) {
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        if (profileDto.getImages() != null && !profileDto.getImages().isEmpty()) {
-//            user.getImages().clear();
-//            for (ImageDto imageDto : profileDto.getImages()) {
-//                Image image = new Image();
-//                image.setUrl(imageDto.getUrl());
-//                image.setOriginalFileName(imageDto.getOriginalFileName());
-//                image.setStoreFileName(imageDto.getStoreFileName());
-//                image.setUser(user);
-//                user.getImages().add(image);
-//            }
+//    public NicknameChangeResponse changeNickname(Long userId, String newNickname) {
+//        if (newNickname == null || newNickname.isBlank()) {
+//            throw new BusinessException(UserErrorCode.NICKNAME_INVALID);
+//        }
+//        if (userRepository.existsByNicknameIgnoreCase(newNickname)) {
+//            throw new BusinessException(UserErrorCode.NICKNAME_TAKEN);
 //        }
 //
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+//
+//        // 동일 닉네임이면 에러로 처리(원하면 그냥 OK 반환으로 바꿔도 됨)
+//        if (user.getNickname() != null
+//                && user.getNickname().equalsIgnoreCase(newNickname)) {
+//            throw new BusinessException(UserErrorCode.NICKNAME_SAME_AS_BEFORE);
+//        }
+//
+//        user.setNickname(newNickname);
+//        user.setLastNicknameChangedAt(LocalDateTime.now());
 //        userRepository.save(user);
-//        return convertToProfileDto(user);
+//
+//        return new NicknameChangeResponse(
+//                user.getNickname(),
+//                user.getLastNicknameChangedAt().toString()
+//        );
 //    }
 
-    private ProfileDto convertToProfileDto(User user) {
+    private ProfileDto convertToProfileDto(User user, List<Image> images) {
         ProfileDto profileDto = new ProfileDto();
         profileDto.setId(user.getId());
         profileDto.setUsername(user.getUsername());
@@ -109,6 +105,7 @@ public class ProfileService {
         profileDto.setGrade(user.getUserGrade());
         profileDto.setUserType(user.getUserType());
         profileDto.setImages(imageUtils.convertToImageDtos(user.getImages()));
+        //profileDto.setImages(imageUtils.convertToImageDtos(images));
         return profileDto;
     }
 }

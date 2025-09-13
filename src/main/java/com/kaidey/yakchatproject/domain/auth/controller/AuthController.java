@@ -32,7 +32,6 @@ import java.util.Map;
 public class AuthController {
 
     private final OcrVerificationService ocrVerificationService;
-    private final EmailService emailService;
     private final UserService userService;
     private final RedisUtil redisUtil;
 

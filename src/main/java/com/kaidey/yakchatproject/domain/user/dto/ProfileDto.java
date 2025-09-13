@@ -15,6 +15,7 @@ import java.util.List;
 public class ProfileDto {
     private Long id;
     private String username;
+    private String nickname;
     private Integer age;
     private String school;
     private UserGrade grade;
