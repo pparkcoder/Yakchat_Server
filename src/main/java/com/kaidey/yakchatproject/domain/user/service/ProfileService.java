@@ -1,39 +1,32 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
+import com.kaidey.yakchatproject.domain.image.service.ImageService;
+import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeRequest;
 import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
 import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
-import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
-import com.kaidey.yakchatproject.domain.onboarding.repository.StudentProfileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
-import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
-
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+
 @Service
+@RequiredArgsConstructor
 public class ProfileService {
 
     private final UserRepository userRepository;
     private final ImageUtils imageUtils;
-    private final StudentProfileRepository studentProfileRepository;
-
-    @Autowired
-    public ProfileService(
-            UserRepository userRepository,
-            ImageUtils imageUtils,
-            StudentProfileRepository studentProfileRepository
-    ) {
-        this.userRepository = userRepository;
-        this.imageUtils = imageUtils;
-        this.studentProfileRepository = studentProfileRepository;
-    }
+    private final ImageService imageService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -41,12 +34,31 @@ public class ProfileService {
     @Transactional
     public ProfileDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        StudentProfile sp = studentProfileRepository.findByUserId(userId).orElse(null);
+        List<Image> findProfileImage = imageService.getProfileImage(userId);
 
+        return convertToProfileDto(user, findProfileImage);
+    }
 
-        return convertToProfileDto(user, sp);
+    @Transactional
+    public NicknameChangeResponse updateProfile(Long userId, NicknameChangeRequest request) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
+            if(request.getKeys() != null && !request.getKeys().isEmpty()) {
+                List<Image> images = imageService.saveProfileImages(request.getKeys(), user);
+                user.updateWithImage(request.getNickname(), images);
+            } else{
+                user.update(request.getNickname());
+            }
+            return new NicknameChangeResponse(
+                    user.getNickname(),
+                    user.getLastNicknameChangedAt().toString()
+            );
+        } catch (Exception e){
+            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        }
     }
 
 
@@ -86,46 +98,16 @@ public class ProfileService {
         );
     }
 
-
-
-
-//    @Transactional
-//    public ProfileDto updateProfile(Long userId, ProfileDto profileDto) {
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        if (profileDto.getImages() != null && !profileDto.getImages().isEmpty()) {
-//            user.getImages().clear();
-//            for (ImageDto imageDto : profileDto.getImages()) {
-//                Image image = new Image();
-//                image.setUrl(imageDto.getUrl());
-//                image.setOriginalFileName(imageDto.getOriginalFileName());
-//                image.setStoreFileName(imageDto.getStoreFileName());
-//                image.setUser(user);
-//                user.getImages().add(image);
-//            }
-//        }
-//
-//        userRepository.save(user);
-//        return convertToProfileDto(user);
-//    }
-
-    private ProfileDto convertToProfileDto(User user, StudentProfile sp) {
-        ProfileDto dto = new ProfileDto();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setSchool(user.getSchool());
-        dto.setGrade(user.getUserGrade());
-        dto.setUserType(user.getUserType());
-        dto.setImages(imageUtils.convertToImageDtos(user.getImages()));
-
-        // student_profile 존재할 때만 채우기
-        if (sp != null) {
-            dto.setStudentGrade(sp.getGrade());
-            dto.setAge(sp.getAge());
-        } else {
-            dto.setStudentGrade(null);
-        }
-        return dto;
+    private ProfileDto convertToProfileDto(User user, List<Image> images) {
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setId(user.getId());
+        profileDto.setUsername(user.getUsername());
+        profileDto.setNickname(user.getNickname());
+        profileDto.setEmail(user.getEmail());
+        profileDto.setSchool(user.getSchool());
+        profileDto.setGrade(user.getUserGrade());
+        profileDto.setUserType(user.getUserType());
+        profileDto.setImages(imageUtils.convertToImageDtos(images));
+        return profileDto;
     }
 }

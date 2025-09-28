@@ -4,7 +4,6 @@ import com.kaidey.yakchatproject.domain.auth.dto.*;
 import com.kaidey.yakchatproject.domain.auth.service.OcrVerificationService;
 import com.kaidey.yakchatproject.domain.auth.dto.OcrStatusResponse;
 import com.kaidey.yakchatproject.domain.auth.dto.OcrVerificationResponse;
-import com.kaidey.yakchatproject.domain.email.service.EmailService;
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
 import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import com.kaidey.yakchatproject.domain.user.entity.User;
@@ -32,7 +31,6 @@ import java.util.Map;
 public class AuthController {
 
     private final OcrVerificationService ocrVerificationService;
-    private final EmailService emailService;
     private final UserService userService;
     private final RedisUtil redisUtil;
 
