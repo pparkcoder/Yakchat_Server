@@ -15,15 +15,17 @@ import java.util.List;
 public class ProfileDto {
     private Long id;
     private String username;
-    private Integer age;
+    private String nickname;
+    private String email;
+    private UserType userType;
     private String school;
     private UserGrade grade;
-    private UserType userType;
-    private String studentGrade;
 
+    private String studentGrade;
 
 //    private String ProfileImage;
 //    private String ProfileImageUrl;
+
     private List<ImageDto> images;
 
 }

@@ -20,7 +20,6 @@ import com.kaidey.yakchatproject.global.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,7 +40,6 @@ public class AnswerService {
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
-    private final ImageRepository imageRepository;
     private final ImageService imageService;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
@@ -120,7 +118,7 @@ public class AnswerService {
     // 모든 답변 조회
     @Transactional(readOnly = true)
     public List<AnswerDto> getAllAnswers() {
-        return answerRepository.findAll().stream()
+        return answerRepository.findAllByOrderByIsAcceptedDescCreatedAtDesc().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -234,7 +232,7 @@ public class AnswerService {
     public List<QuestionWithAnswersDto> getAnswersByUserIdByCreatedAtDesc(Long userId) {
 
         // 내가 작성한 답변 조회
-        List<AnswerDto> answers = answerRepository.findTop5ByUserIdOrderByCreatedAtDesc(userId).stream()
+        List<AnswerDto> answers = answerRepository.findTop5ByUserIdOrderByIsAcceptedDescCreatedAtDesc(userId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
 

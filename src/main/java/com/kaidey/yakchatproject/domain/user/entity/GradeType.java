@@ -6,5 +6,6 @@ public enum GradeType {
     HANAL,      // 한알
     DUAL,       // 두알
     GOSU,       // 고수
-    MYEONGYAK   // 명약
+    MYEONGYAK,   // 명약
+    GREEN
 }

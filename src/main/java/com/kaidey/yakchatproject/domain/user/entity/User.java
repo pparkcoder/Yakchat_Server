@@ -1,9 +1,8 @@
 package com.kaidey.yakchatproject.domain.user.entity;
 
-import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
+import com.kaidey.yakchatproject.domain.image.entity.ImageType;
 import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
-import com.kaidey.yakchatproject.domain.question.entity.Question;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -96,7 +95,33 @@ public class User implements UserDetails {
     public boolean isAccountNonLocked() {return true;}
 
     @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
     public boolean isEnabled() {return isActive;}
 
+    public void update(String nickname) {
+        this.nickname = nickname;
+        this.lastNicknameChangedAt = LocalDateTime.now();
+    }
 
+    public void updateWithImage(String nickname, List<Image> images) {
+        this.nickname = nickname;
+        this.lastNicknameChangedAt = LocalDateTime.now();
+
+        Iterator<Image> iterator = this.images.iterator();
+        while (iterator.hasNext()) {
+            Image next = iterator.next();
+            if(next.getImageType() == ImageType.P) {
+                next.setUser(null);
+                iterator.remove();
+            }
+        }
+        for (Image image : images) {
+            this.images.add(image);
+            image.setUser(this);
+        }
+    }
 }

@@ -37,4 +37,7 @@ public class Image {
     private User user; // 연관된 사용자 (nullable)
 
     private int stepIndex;
+
+    @Enumerated(EnumType.STRING) // Default : ORDINAL(숫자로 들어감) -> 중간에 상태가 추가되면 기존에 숫자가 유지되므로 상태가 꼬임
+    private ImageType imageType;
 }
