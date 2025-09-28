@@ -23,6 +23,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.kaidey.yakchatproject.domain.fcm.event.ReplyCreatedEvent;
+import com.kaidey.yakchatproject.domain.fcm.event.AnswerAcceptedEvent;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,6 +43,9 @@ public class AnswerService {
     private final ImageService imageService;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
     private static final Logger log = LoggerFactory.getLogger(AnswerController.class);
 
 
@@ -65,6 +73,15 @@ public class AnswerService {
 
         // Answer 저장
         Answer savedAnswer = answerRepository.save(answer);
+
+        publisher.publishEvent(new ReplyCreatedEvent(
+                question.getUser().getId(),    // questionAuthorId
+                question.getId(),              // questionId
+                savedAnswer.getId(),           // replyId
+                question.getTitle(),           // questionTitle
+                user.getId()                   // replierId
+        ));
+
         userService.updateUserActivity(user, 0, 1);
         return convertToDto(savedAnswer);
     }
@@ -169,6 +186,12 @@ public class AnswerService {
         answer.setIsAccepted(true);
         answerRepository.save(answer);
 
+        publisher.publishEvent(new AnswerAcceptedEvent(
+                answer.getUser().getId(),      // answerAuthorId
+                question.getId(),              // questionId
+                answer.getId(),                // answerId
+                question.getTitle()            // questionTitle
+        ));
 
         userService.incrementAcceptedCount(answer.getUser(), 1);
     }

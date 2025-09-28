@@ -25,6 +25,9 @@ import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.kaidey.yakchatproject.domain.fcm.event.QuestionCreatedEvent;
 
 import java.util.Iterator;
 import java.util.List;
@@ -44,7 +47,8 @@ public class QuestionService {
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
     private final ImageService imageService;
-
+    @Autowired
+    private ApplicationEventPublisher publisher;
 
     // 질문 생성
     @Transactional
@@ -69,6 +73,15 @@ public class QuestionService {
         }
 
         Question savedQuestion = questionRepository.save(question);
+
+        publisher.publishEvent(new QuestionCreatedEvent(
+                savedQuestion.getId(),         // questionId
+                subject.getId(),               // subjectId
+                subject.getName(),             // subjectName
+                savedQuestion.getTitle(),      // questionTitle
+                user.getId()                   // authorId
+        ));
+
         userService.updateUserActivity(user, 1, 0);
         return convertToDto(savedQuestion);
     }
