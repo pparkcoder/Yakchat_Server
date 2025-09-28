@@ -1,34 +1,40 @@
 package com.kaidey.yakchatproject.domain.user.service;
 
 import com.kaidey.yakchatproject.domain.user.dto.ProfileDto;
-import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeRequest;
 import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.EntityNotFoundException;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
+import com.kaidey.yakchatproject.domain.onboarding.repository.StudentProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
-import com.kaidey.yakchatproject.domain.image.dto.ImageDto;
-import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
+import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
+
 
 import java.time.LocalDateTime;
-
 @Service
 public class ProfileService {
 
     private final UserRepository userRepository;
     private final ImageUtils imageUtils;
+    private final StudentProfileRepository studentProfileRepository;
 
     @Autowired
-    public ProfileService(UserRepository userRepository, ImageUtils imageUtils) {
+    public ProfileService(
+            UserRepository userRepository,
+            ImageUtils imageUtils,
+            StudentProfileRepository studentProfileRepository
+    ) {
         this.userRepository = userRepository;
         this.imageUtils = imageUtils;
+        this.studentProfileRepository = studentProfileRepository;
     }
+
     @Value("${file.upload-dir}")
     private String uploadDir;
 
@@ -37,7 +43,10 @@ public class ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        return convertToProfileDto(user);
+        StudentProfile sp = studentProfileRepository.findByUserId(userId).orElse(null);
+
+
+        return convertToProfileDto(user, sp);
     }
 
 
@@ -101,14 +110,22 @@ public class ProfileService {
 //        return convertToProfileDto(user);
 //    }
 
-    private ProfileDto convertToProfileDto(User user) {
-        ProfileDto profileDto = new ProfileDto();
-        profileDto.setId(user.getId());
-        profileDto.setUsername(user.getUsername());
-        profileDto.setSchool(user.getSchool());
-        profileDto.setGrade(user.getUserGrade());
-        profileDto.setUserType(user.getUserType());
-        profileDto.setImages(imageUtils.convertToImageDtos(user.getImages()));
-        return profileDto;
+    private ProfileDto convertToProfileDto(User user, StudentProfile sp) {
+        ProfileDto dto = new ProfileDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setSchool(user.getSchool());
+        dto.setGrade(user.getUserGrade());
+        dto.setUserType(user.getUserType());
+        dto.setImages(imageUtils.convertToImageDtos(user.getImages()));
+
+        // student_profile 존재할 때만 채우기
+        if (sp != null) {
+            dto.setStudentGrade(sp.getGrade());
+            dto.setAge(sp.getAge());
+        } else {
+            dto.setStudentGrade(null);
+        }
+        return dto;
     }
 }

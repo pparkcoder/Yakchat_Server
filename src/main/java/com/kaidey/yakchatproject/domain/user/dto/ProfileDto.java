@@ -19,6 +19,8 @@ public class ProfileDto {
     private String school;
     private UserGrade grade;
     private UserType userType;
+    private String studentGrade;
+
 
 //    private String ProfileImage;
 //    private String ProfileImageUrl;
