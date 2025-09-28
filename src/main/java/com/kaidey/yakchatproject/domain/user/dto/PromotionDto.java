@@ -8,7 +8,7 @@ import lombok.Getter;
 public class PromotionDto {
     private String currentGrade;
     private String nextGrade;
-    private int progress;
-    private int target;
-    private double rate;
+    private int progress;//
+    private int target;//
+    private double rate;//
 }
