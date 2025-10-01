@@ -20,6 +20,8 @@ import com.kaidey.yakchatproject.domain.question.repository.QuestionRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
+import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
+import com.kaidey.yakchatproject.domain.onboarding.repository.StudentProfileRepository;
 import com.kaidey.yakchatproject.global.util.StepsJsonUtils;
 import com.kaidey.yakchatproject.global.exception.*;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,7 @@ public class AnswerService {
     private final ImageService imageService;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
+    private final StudentProfileRepository studentProfileRepository;
 
     @Autowired
     private ApplicationEventPublisher publisher;
@@ -199,28 +202,6 @@ public class AnswerService {
     }
 
 
-    /** 커서 키 */
-    static class RecordKey {
-        final boolean accepted; final LocalDateTime ts; final Long id;
-        static RecordKey of(Boolean a, LocalDateTime t, Long i) { return new RecordKey(a!=null&&a, t, i); }
-        static RecordKey fromCursor(String c) {
-            if (c == null || c.isBlank()) return null;
-            // 예: "ACCEPTED:0|TS:2025-10-01T11:05:12.123456|ID:42"
-            // 파싱 로직 간단 구현
-            String[] parts = c.split("\\|");
-            boolean acc = parts[0].endsWith("1");
-            LocalDateTime ts = LocalDateTime.parse(parts[1].substring(3+1)); // "TS:"
-            long id = Long.parseLong(parts[2].substring(3+1)); // "ID:"
-            return new RecordKey(acc, ts, id);
-        }
-        String toCursor() {
-            return "ACCEPTED:" + (accepted?1:0) + "|TS:" + ts + "|ID:" + id;
-        }
-        private RecordKey(boolean a, LocalDateTime t, Long i){ this.accepted=a; this.ts=t; this.id=i; }
-    }
-
-
-
     // 답변 삭제
     @Transactional
     public void deleteAnswer(Long id) {
@@ -320,39 +301,6 @@ public class AnswerService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnswerCardDto> getAnswerCards(Long questionId, int previewSteps, Long me) {
-        var answers = answerRepository.findByQuestionIdOrderByIsAcceptedDescCreatedAtDesc(questionId);
-
-        return answers.stream().map(a -> {
-            var steps = StepsJsonUtils.fromJson(a.getContent()); // 전체 steps
-            var preview = steps.stream().limit(previewSteps).toList();
-
-            AnswerCardDto dto = new AnswerCardDto();
-            dto.setId(a.getId());
-            dto.setQuestionId(a.getQuestion().getId());
-            dto.setAuthor(toAuthor(a.getUser(), me));
-
-            dto.setAccepted(a.getIsAccepted());
-            dto.setLikeCount(a.getLikes());
-            dto.setCreatedAt(a.getCreatedAt().toString());
-
-            List<AnswerCardDto.Step> previewStepsDto = preview.stream().map(s -> {
-                AnswerCardDto.Step st = new AnswerCardDto.Step();
-                st.setStepId(s.getId());
-                st.setContent(s.getContent());
-                st.setImages(List.of());
-                return st;
-            }).toList();
-
-            dto.setSteps(previewStepsDto);
-            dto.setStepTotal(steps.size());
-            dto.setHasMoreSteps(steps.size() > previewSteps);
-
-            return dto;
-        }).toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<AnswerCardDto.Step> getStepsSlice(Long answerId, int offset, int limit) {
         Answer answer = answerRepository.findById(answerId)
                 .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
@@ -373,9 +321,15 @@ public class AnswerService {
     private AnswerCardDto.Author toAuthor(User user, Long meUserId) {
         AnswerCardDto.Author a = new AnswerCardDto.Author();
         a.setId(user.getId());
+        a.setSchool(user.getSchool());
         a.setNickname(user.getNickname() != null ? user.getNickname() : user.getUsername());
-        a.setAvatarUrl(getUserAvatarUrlCached(user.getId())); // ⬅ 여기서 가져옴
+        a.setAvatarUrl(getUserAvatarUrlCached(user.getId()));
         a.setIsMe(meUserId != null && meUserId.equals(user.getId()));
+
+        studentProfileRepository.findByUserId(user.getId())
+                .ifPresent(studentProfile -> {
+                    a.setGrade(studentProfile.getGrade());
+                });
         return a;
     }
 
@@ -408,6 +362,7 @@ public class AnswerService {
         dto.setUserId(answer.getUser().getId());
         dto.setNickname(answer.getUser().getNickname());
 
+
         dto.setUserAvatarUrl(getUserAvatarUrlCached(answer.getUser().getId()));
 
         dto.setAccepted(answer.getIsAccepted());
@@ -425,6 +380,7 @@ public class AnswerService {
                     return sd;
                 }).toList()
         );
+
         return dto;
     }
 

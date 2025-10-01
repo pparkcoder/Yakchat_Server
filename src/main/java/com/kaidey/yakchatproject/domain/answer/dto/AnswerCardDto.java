@@ -24,6 +24,7 @@ public class AnswerCardDto {
         private Long id;            // userId
         private String nickname;        // userName
         private String school;        // 선택
+        private String grade;        // 선택
         private String avatarUrl;   // 선택
         private Boolean isMe;       // 선택
     }

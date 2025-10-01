@@ -37,26 +37,7 @@ public class AnswerController {
         return ResponseEntity.ok(answerService.createAnswer(request, userId));
     }
 
-//    @GetMapping("/cards")
-//    public ResponseEntity<List<AnswerCardDto>> getAnswerCards(
-//            @RequestParam Long questionId,
-//            @RequestParam(defaultValue = "3") int previewSteps,
-//            @RequestHeader("Authorization") String token
-//    ) {
-//        Long me = jwtTokenProvider.getUserIdFromToken(token.substring(7));
-//        return ResponseEntity.ok(answerService.getAnswerCards(questionId, previewSteps, me));
-//    }
-
-    //STEP 더보기 (지연로딩)
-    @GetMapping("/{answerId}/steps")
-    public ResponseEntity<List<AnswerCardDto.Step>> getMoreSteps(
-            @PathVariable Long answerId,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit
-    ) {
-        return ResponseEntity.ok(answerService.getStepsSlice(answerId, offset, limit));
-    }
-
+    // 답변 카드 페이지네이션 조회
     @GetMapping("/cards")
     public ResponseEntity<Map<String, Object>> getAnswerCardsPage(
             @RequestParam Long questionId,
@@ -69,6 +50,15 @@ public class AnswerController {
         return ResponseEntity.ok(result);
     }
 
+    //STEP 더보기 (지연로딩)
+    @GetMapping("/{answerId}/steps")
+    public ResponseEntity<List<AnswerCardDto.Step>> getMoreSteps(
+            @PathVariable Long answerId,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(answerService.getStepsSlice(answerId, offset, limit));
+    }
 
 
     @GetMapping("/{id}")
@@ -82,11 +72,11 @@ public class AnswerController {
         return ResponseEntity.ok(answerService.getAllAnswers());
     }
 
-    // 특정 질문에 해당하는 답변 조회
-    @GetMapping("/question/{questionId}")
-    public ResponseEntity<List<AnswerWithStepsDto>> getAnswersByQuestionId(@PathVariable Long questionId) {
-        return ResponseEntity.ok(answerService.getAnswersByQuestionId(questionId));
-    }
+//    // 특정 질문에 해당하는 답변 조회
+//    @GetMapping("/question/{questionId}")
+//    public ResponseEntity<List<AnswerWithStepsDto>> getAnswersByQuestionId(@PathVariable Long questionId) {
+//        return ResponseEntity.ok(answerService.getAnswersByQuestionId(questionId));
+//    }
 
     // 답변 업데이트
     @PutMapping("/{id}")
