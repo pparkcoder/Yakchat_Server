@@ -7,6 +7,8 @@ import com.kaidey.yakchatproject.domain.user.dto.NicknameChangeResponse;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
+import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
+import com.kaidey.yakchatproject.domain.onboarding.repository.StudentProfileRepository;
 import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.List;
 public class ProfileService {
 
     private final UserRepository userRepository;
+    private final StudentProfileRepository studentProfileRepository;
     private final ImageUtils imageUtils;
     private final ImageService imageService;
 
@@ -108,6 +111,12 @@ public class ProfileService {
         profileDto.setGrade(user.getUserGrade());
         profileDto.setUserType(user.getUserType());
         profileDto.setImages(imageUtils.convertToImageDtos(images));
+
+        studentProfileRepository.findByUserId(user.getId())
+                .ifPresent(studentProfile -> {
+                    profileDto.setAge(studentProfile.getAge());
+                    profileDto.setStudentGrade(studentProfile.getGrade());
+                });
         return profileDto;
     }
 }

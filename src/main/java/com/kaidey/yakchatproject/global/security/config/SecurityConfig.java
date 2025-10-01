@@ -60,6 +60,8 @@ public class SecurityConfig {
                                 "/api/auth/ocr-verify","/api/auth/ocr-status/**",
                                 "/api/email/**","/api/auth/register-complete"
                         ).permitAll()
+                        .requestMatchers("/api/auth/logout").authenticated()  // 로그아웃
+                        .requestMatchers("/api/auth/delete-account").authenticated()  // 계정 탈퇴
                         .requestMatchers("/api/answers/**").authenticated()
                         .requestMatchers("/api/questions/**").authenticated()
                         .requestMatchers("/api/profile/**").authenticated()
@@ -81,7 +83,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-//        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://endlessly-cuddly-salmon.ngrok-free.app","https://yakchat-front.vercel.app","http://ec2-13-209-70-10.ap-northeast-2.compute.amazonaws.com")); // 허용할 출처
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000","https://endlessly-cuddly-salmon.ngrok-free.app","https://yakchat-front.vercel.app","http://ec2-13-209-70-10.ap-northeast-2.compute.amazonaws.com")); // 허용할 출처
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드
         configuration.setAllowCredentials(true); // 자격 증명 허용
         configuration.setAllowedHeaders(Arrays.asList(

@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -18,6 +20,9 @@ import java.util.*;
 @Getter
 @Setter
 @NoArgsConstructor
+@SQLDelete(sql = "UPDATE `user` SET `is_deleted` = 1, `deleted_at` = NOW() WHERE `user_id` = ?")
+@Where(clause = "is_deleted = 0")
+@Table(name = "user")
 public class User implements UserDetails {
 
     @Id
@@ -25,31 +30,40 @@ public class User implements UserDetails {
     @Column(name = "user_id")
     private Long id;
 
+    /** 실명(중복 허용) */
     @Column(nullable = false, length = 50)
-    private String username; //실명
+    private String username;
 
     @Column(nullable = false, length = 50)
-    private String nickname; //별명
+    private String nickname;
 
-    @Column(nullable = false, unique = true, length = 255)
+    /** 이메일(활성 사용자 한정 유니크: DB에서 (email, is_deleted) 복합 유니크) */
+    @Column(nullable = false, length = 255)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private UserType userType = UserType.STUDENT; // 기본값 학생
+    private UserType userType = UserType.STUDENT;
 
     @Column(nullable = false)
     private String school;
 
+    /** 계정 활성 플래그(정지/휴면과 분리) */
     @Column(nullable = false)
     private Boolean isActive = true;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    /** 소프트 삭제 플래그/시각 */
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     private LocalDateTime lastLoginAt;
 
@@ -57,7 +71,7 @@ public class User implements UserDetails {
     private StudentProfile studentProfile;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private UserGrade userGrade; //
+    private UserGrade userGrade;
 
     @BatchSize(size = 100)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -65,42 +79,48 @@ public class User implements UserDetails {
 
     private LocalDateTime lastNicknameChangedAt;
 
+    /** 역할(선택) */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
-    private Set<RoleType> roles;
+    private Set<RoleType> roles = new HashSet<>();
 
+    /** 권한 문자열 컬렉션(선택) */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_authorities", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> authorities = new ArrayList<>();
 
+    /* ===== UserDetails 구현 ===== */
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities.stream()
-                .map(authority -> (GrantedAuthority) () -> authority)
+                .map(auth -> (GrantedAuthority) () -> auth)
                 .toList();
     }
 
+    /** 주의: 로그인 아이디로 email을 쓰는 경우, UserDetailsService에서 email로 조회하도록 구현하세요. */
     @Override
-    public String getUsername() {return username;}
+    public String getUsername() { return username; }
 
     @Override
-    public String getPassword() {return password;}
+    public String getPassword() { return password; }
 
     @Override
-    public boolean isAccountNonExpired() {return true;}
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {return true;}
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
+    /** 활성 + 미삭제 사용자만 로그인 가능 */
     @Override
-    public boolean isEnabled() {return isActive;}
+    public boolean isEnabled() { return Boolean.TRUE.equals(isActive) && !isDeleted; }
+
+    /* ===== 도메인 메서드 ===== */
 
     public void update(String nickname) {
         this.nickname = nickname;
@@ -111,14 +131,16 @@ public class User implements UserDetails {
         this.nickname = nickname;
         this.lastNicknameChangedAt = LocalDateTime.now();
 
-        Iterator<Image> iterator = this.images.iterator();
-        while (iterator.hasNext()) {
-            Image next = iterator.next();
-            if(next.getImageType() == ImageType.P) {
-                next.setUser(null);
-                iterator.remove();
+        // 기존 프로필 이미지 제거(P 타입만 교체)
+        Iterator<Image> it = this.images.iterator();
+        while (it.hasNext()) {
+            Image img = it.next();
+            if (img.getImageType() == ImageType.P) {
+                img.setUser(null);
+                it.remove();
             }
         }
+        // 신규 이미지 연결
         for (Image image : images) {
             this.images.add(image);
             image.setUser(this);

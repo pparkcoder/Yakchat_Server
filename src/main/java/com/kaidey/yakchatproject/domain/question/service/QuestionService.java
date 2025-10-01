@@ -232,7 +232,7 @@ public class QuestionService {
                 .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
         List<Like> likes = likeRepository.findByUserIdAndQuestionId(userId, questionId);
         if (likes.isEmpty()) {
-            throw new BusinessException(CommonErrorCode.INVAILD_REQEUST);
+            throw new BusinessException(CommonErrorCode.INVALID_REQUEST);
         }
         likeRepository.deleteAll(likes);
         question.decrementLikes();
@@ -331,7 +331,7 @@ public class QuestionService {
         questionDto.setSubjectId(question.getSubject().getId());
         questionDto.setSubjectName(question.getSubject().getName()); // Set subject name
         questionDto.setUserId(question.getUser().getId());
-        questionDto.setUserName(question.getUser().getUsername()); // Set username based on anonymity
+        questionDto.setNickname(question.getUser().getNickname()); // Set username based on anonymity
         questionDto.setCreatedAt(question.getCreatedAt());
         questionDto.setUpdatedAt(question.getModifiedAt());
         questionDto.setLikeCount(question.getLikes());
@@ -369,7 +369,7 @@ public class QuestionService {
         dto.setSubjectId(question.getSubject().getId());
         dto.setSubjectName(question.getSubject().getName());
         dto.setUserId(question.getUser().getId());
-        dto.setUserName(question.getUser().getUsername());
+        dto.setUserNickname(question.getUser().getNickname());
         dto.setCreatedAt(question.getCreatedAt());
         dto.setUpdatedAt(question.getModifiedAt());
         dto.setLikeCount(question.getLikes());

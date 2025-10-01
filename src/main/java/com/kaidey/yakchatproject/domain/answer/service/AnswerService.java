@@ -1,11 +1,15 @@
 package com.kaidey.yakchatproject.domain.answer.service;
 
 import com.kaidey.yakchatproject.domain.answer.controller.AnswerController;
-import com.kaidey.yakchatproject.domain.answer.dto.AnswerDto;
+import com.kaidey.yakchatproject.domain.answer.dto.AnswerWithStepsDto;
+import com.kaidey.yakchatproject.domain.answer.dto.AnswerCardDto;
+import com.kaidey.yakchatproject.domain.answer.dto.request.CreateAnswerStepsRequest;
+import com.kaidey.yakchatproject.domain.answer.dto.request.UpdateAnswerStepsRequest;
 import com.kaidey.yakchatproject.domain.answer.entity.Answer;
 import com.kaidey.yakchatproject.domain.answer.repository.AnswerRepository;
+import com.kaidey.yakchatproject.domain.fcm.event.AnswerAcceptedEvent;
+import com.kaidey.yakchatproject.domain.fcm.event.ReplyCreatedEvent;
 import com.kaidey.yakchatproject.domain.image.entity.Image;
-import com.kaidey.yakchatproject.domain.image.repository.ImageRepository;
 import com.kaidey.yakchatproject.domain.image.service.ImageService;
 import com.kaidey.yakchatproject.domain.image.util.ImageUtils;
 import com.kaidey.yakchatproject.domain.like.entity.Like;
@@ -16,21 +20,25 @@ import com.kaidey.yakchatproject.domain.question.repository.QuestionRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
+import com.kaidey.yakchatproject.domain.onboarding.entity.StudentProfile;
+import com.kaidey.yakchatproject.domain.onboarding.repository.StudentProfileRepository;
+import com.kaidey.yakchatproject.global.util.StepsJsonUtils;
 import com.kaidey.yakchatproject.global.exception.*;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.kaidey.yakchatproject.domain.fcm.event.ReplyCreatedEvent;
-import com.kaidey.yakchatproject.domain.fcm.event.AnswerAcceptedEvent;
-
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +51,7 @@ public class AnswerService {
     private final ImageService imageService;
     private final UserService userService;
     private final ImageUtils imageUtils = new ImageUtils();
+    private final StudentProfileRepository studentProfileRepository;
 
     @Autowired
     private ApplicationEventPublisher publisher;
@@ -51,111 +60,147 @@ public class AnswerService {
 
     // 답변 생성
     @Transactional
-    public AnswerDto createAnswer(AnswerDto answerDto, List<String> keys) {
-        // Question과 User 찾기
-        Question question = questionRepository.findById(answerDto.getQuestionId())
-                .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
-
-        User user = userRepository.findById(answerDto.getUserId())
-                .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
-
-        // Answer 객체 생성
-        Answer answer = new Answer();
-        answer.setContent(answerDto.getContent());
-        answer.setQuestion(question);
-        answer.setUser(user);
-
-        // 이미지가 있으면 미리 리스트에 추가
-        if (keys != null && !keys.isEmpty()) {
-            List<Image> imageList = imageService.saveAnswerImages(keys, answer);
-            answer.setImages(imageList);
-        }
-
-        // Answer 저장
-        Answer savedAnswer = answerRepository.save(answer);
-
-        publisher.publishEvent(new ReplyCreatedEvent(
-                question.getUser().getId(),    // questionAuthorId
-                question.getId(),              // questionId
-                savedAnswer.getId(),           // replyId
-                question.getTitle(),           // questionTitle
-                user.getId()                   // replierId
-        ));
-
-        userService.updateUserActivity(user, 0, 1);
-        return convertToDto(savedAnswer);
-    }
-
-    // 특정 답변 조회
-    @Transactional(readOnly = true)
-    public AnswerDto getAnswerById(Long id) {
-        Answer answer = answerRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
-        return convertToDto(answer);
-    }
-
-    // 특정 질문과 사용자에 대한 답변 조회
-    @Transactional(readOnly = true)
-    public List<AnswerDto> getAnswersByQuestionIdAndUserId(Long questionId, Long userId) {
-        Question question = questionRepository.findById(questionId)
+    public AnswerWithStepsDto createAnswer(CreateAnswerStepsRequest request, Long userId) {
+        Question question = questionRepository.findById(request.getQuestionId())
                 .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND_USER));
 
-        List<Answer> answers = answerRepository.findByQuestionIdAndUserIdOrderByCreatedAtDesc(questionId, userId);
+        String stepsJson = StepsJsonUtils.toJson(request.getSteps());
 
-        if (answers.isEmpty()) {
-            return List.of(); // Return an empty list if no answers are found
+        Answer answer = new Answer();
+        answer.setContent(stepsJson);            // steps 전체를 JSON으로 저장
+        answer.setQuestion(question);
+        answer.setUser(user);
+
+        // 모든 step의 keys를 합쳐 Answer 이미지로 저장 (Phase1)
+        List<String> allKeys = request.getSteps() == null ? List.of()
+                : request.getSteps().stream()
+                .filter(s -> s.getKeys() != null && !s.getKeys().isEmpty())
+                .flatMap(s -> s.getKeys().stream())
+                .distinct()
+                .toList();
+
+        if (!allKeys.isEmpty()) {
+            List<Image> images = imageService.saveAnswerImages(allKeys, answer);
+            answer.setImages(images);
         }
 
-        return answers.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
+        Answer saved = answerRepository.save(answer);
 
+        publisher.publishEvent(new ReplyCreatedEvent(
+                question.getUser().getId(),
+                question.getId(),
+                saved.getId(),
+                question.getTitle(),
+                user.getId()
+        ));
+        userService.updateUserActivity(user, 0, 1);
 
-    // 모든 답변 조회
-    @Transactional(readOnly = true)
-    public List<AnswerDto> getAllAnswers() {
-        return answerRepository.findAllByOrderByIsAcceptedDescCreatedAtDesc().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        return toAnswerWithStepsDto(saved);
     }
 
     //답변 업데이트
     @Transactional
-    public AnswerDto updateAnswer(Long id, AnswerDto answerDto, List<String> keys) {
-        try {
-            // Answer 찾기
-            Answer answer = answerRepository.findById(id)
-                    .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
+    public AnswerWithStepsDto updateAnswer(Long answerId, UpdateAnswerStepsRequest request, Long userId) {
+        Answer answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
 
-            // Question 찾기 및 설정
-            Question question = questionRepository.findById(answerDto.getQuestionId())
-                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
-
-            // 답변 업데이트
-            if (keys != null && !keys.isEmpty()) { // 이미지가 추가
-                List<Image> updateImages = imageService.saveAnswerImages(keys, answer);
-                answer.updateWithImage(answerDto.getContent(), question, updateImages);
-            } else {
-                answer.update(answerDto.getContent(), question);
-            }
-            return convertToDto(answerRepository.save(answer));
-
-        } catch(Exception e){
-            throw new BusinessException(CommonErrorCode.COMMON_ERROR);
+        if (!answer.getUser().getId().equals(userId)) {
+            throw new BusinessException(CommonErrorCode.NO_AUTHORITY);
         }
+
+        if (!answer.getQuestion().getId().equals(request.getQuestionId())) {
+            Question q = questionRepository.findById(request.getQuestionId())
+                    .orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_QUESTION));
+            answer.setQuestion(q);
+        }
+
+        String stepsJson = StepsJsonUtils.toJson(request.getSteps());
+        answer.update(stepsJson, answer.getQuestion()); // modifiedAt 업데이트 포함
+
+        List<String> allKeys = request.getSteps() == null ? List.of()
+                : request.getSteps().stream()
+                .filter(s -> s.getKeys() != null && !s.getKeys().isEmpty())
+                .flatMap(s -> s.getKeys().stream())
+                .distinct()
+                .toList();
+
+        if (!allKeys.isEmpty()) {
+            List<Image> updateImages = imageService.saveAnswerImages(allKeys, answer);
+            answer.updateWithImage(answer.getContent(), answer.getQuestion(), updateImages);
+        }
+
+        Answer saved = answerRepository.save(answer);
+        return toAnswerWithStepsDto(saved);
+    }
+
+
+    @Transactional(readOnly = true)
+    public AnswerWithStepsDto getAnswerById(Long id) {
+        Answer answer = answerRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
+        return toAnswerWithStepsDto(answer);
     }
 
     @Transactional(readOnly = true)
-    public List<AnswerDto> getAnswersByQuestionId(Long questionId) {
-        List<Answer> answers = answerRepository.findByQuestionIdOrderByCreatedAtDesc(questionId);
-        return answers.stream()
-                .map(this::convertToDto)
+    public List<AnswerWithStepsDto> getAllAnswers() {
+        return answerRepository.findAllByOrderByIsAcceptedDescCreatedAtDesc().stream()
+                .map(this::toAnswerWithStepsDto)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<AnswerWithStepsDto> getAnswersByQuestionId(Long questionId) {
+        return answerRepository.findByQuestionIdOrderByCreatedAtDesc(questionId).stream()
+                .map(this::toAnswerWithStepsDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAnswerCardsPage(Long questionId, int page, int size, Long me) {
+        var pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Order.desc("isAccepted"),
+                        Sort.Order.desc("createdAt"),
+                        Sort.Order.desc("id")));
+
+        Page<Answer> pageData =
+                answerRepository.findByQuestionId(questionId, pageable);
+
+        List<AnswerCardDto> items = pageData.getContent().stream().map(a -> {
+            var steps = StepsJsonUtils.fromJson(a.getContent());
+            var preview = steps.stream().limit(3).toList(); // 프리뷰 3개 고정(원하면 파라미터화)
+
+            AnswerCardDto dto = new AnswerCardDto();
+            dto.setId(a.getId());
+            dto.setQuestionId(a.getQuestion().getId());
+            dto.setAuthor(toAuthor(a.getUser(), me));
+            dto.setAccepted(a.getIsAccepted());
+            dto.setLikeCount(a.getLikes());
+            dto.setCreatedAt(a.getCreatedAt().toString());
+            dto.setSteps(preview.stream().map(s -> {
+                var st = new AnswerCardDto.Step();
+                st.setStepId(s.getId());
+                st.setContent(s.getContent());
+                st.setImages(List.of()); // Phase1: 비움
+                return st;
+            }).toList());
+            dto.setStepTotal(steps.size());
+            dto.setHasMoreSteps(steps.size() > 3);
+            return dto;
+        }).toList();
+
+        return Map.of(
+                "items", items,
+                "page", pageData.getNumber(),
+                "size", pageData.getSize(),
+                "totalPages", pageData.getTotalPages(),
+                "totalElements", pageData.getTotalElements(),
+                "hasNext", pageData.hasNext()
+        );
+    }
+
 
     // 답변 삭제
     @Transactional
@@ -216,7 +261,7 @@ public class AnswerService {
         Answer answer = answerRepository.findById(answerId)
                 .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
         Like like = likeRepository.findByUserIdAndAnswerId(userId, answerId)
-                .orElseThrow(() -> new BusinessException(CommonErrorCode.INVAILD_REQEUST));
+                .orElseThrow(() -> new BusinessException(CommonErrorCode.INVALID_REQUEST));
         likeRepository.delete(like);
         answer.decrementLikes();
 
@@ -230,49 +275,132 @@ public class AnswerService {
     // 회원 ID로 답변 조회 (최신 순)
     @Transactional(readOnly = true)
     public List<QuestionWithAnswersDto> getAnswersByUserIdByCreatedAtDesc(Long userId) {
+        // 내가 작성한 최신 답변 5개 (채택 우선 → 최신순)
+        var answers = answerRepository.findTop5ByUserIdOrderByIsAcceptedDescCreatedAtDesc(userId);
 
-        // 내가 작성한 답변 조회
-        List<AnswerDto> answers = answerRepository.findTop5ByUserIdOrderByIsAcceptedDescCreatedAtDesc(userId).stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // 질문별 답변 개수 맵
+        var answerCount = answers.stream()
+                .collect(Collectors.groupingBy(a -> a.getQuestion().getId(), Collectors.counting()));
 
-        // 질문 ID 별 답변 개수 count
-        Map<Long, Long> answerCount = answers.stream().collect(Collectors.groupingBy(AnswerDto::getQuestionId, Collectors.counting()));
+        // 질문 ID 목록
+        var questionIds = answers.stream()
+                .map(a -> a.getQuestion().getId())
+                .distinct()
+                .toList();
 
-        // 질문 ID 추출
-        List<Long> questionIds = answers.stream().distinct().map(AnswerDto::getQuestionId).collect(Collectors.toList())
-                .stream().distinct().collect(Collectors.toList());
-
-        // 질문 조회
-        List<QuestionWithAnswersDto> questions = questionRepository.findTop5ByIdInOrderByCreatedAtDesc(questionIds).stream()
+        // 질문 조회 (기존 방식 유지)
+        var questions = questionRepository.findTop5ByIdInOrderByCreatedAtDesc(questionIds).stream()
                 .map(this::convertToQuestionWithAnswersDto)
                 .collect(Collectors.toList());
 
-        // 질문 별 답변 개수 매핑
-        for (QuestionWithAnswersDto question : questions) {
-            question.setAnswerCount(answerCount.getOrDefault(question.getId(), 0L).intValue());
+        // 개수 매핑
+        for (var q : questions) {
+            q.setAnswerCount(answerCount.getOrDefault(q.getId(), 0L).intValue());
         }
-
         return questions;
     }
 
-    // Answer 엔티티를 AnswerDto로 변환
-    private AnswerDto convertToDto(Answer answer) {
-        AnswerDto answerDto = new AnswerDto();
-        answerDto.setId(answer.getId());
-        answerDto.setContent(answer.getContent());
-        answerDto.setQuestionId(answer.getQuestion().getId());
-        answerDto.setUserId(answer.getUser().getId());
-        answerDto.setUserName(answer.getUser().getUsername());
-        answerDto.setCreatedAt(answer.getCreatedAt());
-        answerDto.setModifiedAt(answer.getModifiedAt());
-        answerDto.setLikeCount(answer.getLikes());
-        answerDto.setAccepted(answer.getIsAccepted());
-        //int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
-        answerDto.setImages(imageUtils.convertToImageDtos(answer.getImages()));
+    @Transactional(readOnly = true)
+    public List<AnswerCardDto.Step> getStepsSlice(Long answerId, int offset, int limit) {
+        Answer answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new BusinessException(AnswerErrorCode.NOT_FOUND_ANSWER));
 
-        return answerDto;
+        var steps = StepsJsonUtils.fromJson(answer.getContent()); // 레거시 없음: 바로 파싱
+        int off = Math.max(offset, 0);
+        int lim = Math.max(limit, 1);
+
+        return steps.stream().skip(off).limit(lim).map(s -> {
+            AnswerCardDto.Step st = new AnswerCardDto.Step();
+            st.setStepId(s.getId());
+            st.setContent(s.getContent());
+            st.setImages(List.of()); // Phase1: 비움
+            return st;
+        }).toList();
     }
+
+    private AnswerCardDto.Author toAuthor(User user, Long meUserId) {
+        AnswerCardDto.Author a = new AnswerCardDto.Author();
+        a.setId(user.getId());
+        a.setSchool(user.getSchool());
+        a.setNickname(user.getNickname() != null ? user.getNickname() : user.getUsername());
+        a.setAvatarUrl(getUserAvatarUrlCached(user.getId()));
+        a.setIsMe(meUserId != null && meUserId.equals(user.getId()));
+
+        studentProfileRepository.findByUserId(user.getId())
+                .ifPresent(studentProfile -> {
+                    a.setGrade(studentProfile.getGrade());
+                });
+        return a;
+    }
+
+
+    private final Map<Long, String> avatarCache = new ConcurrentHashMap<>();
+
+    private String getUserAvatarUrlCached(Long userId) {
+        return avatarCache.computeIfAbsent(userId, this::getUserAvatarUrl);
+    }
+
+    private String getUserAvatarUrl(Long userId) {
+        // 프로필용 이미지 목록 조회 (ImageType.P)
+        List<Image> profileImages = imageService.getProfileImage(userId);
+        if (profileImages == null || profileImages.isEmpty()) {
+            return null; // 기본 아바타를 프론트에서 보여주면 됨
+        }
+
+        var imageDtos = imageUtils.convertToImageDtos(profileImages);
+        if (imageDtos == null || imageDtos.isEmpty()) {
+            return null;
+        }
+
+        return imageDtos.get(0).getUrlKey();
+    }
+
+    private AnswerWithStepsDto toAnswerWithStepsDto(Answer answer) {
+        AnswerWithStepsDto dto = new AnswerWithStepsDto();
+        dto.setId(answer.getId());
+        dto.setQuestionId(answer.getQuestion().getId());
+        dto.setUserId(answer.getUser().getId());
+        dto.setNickname(answer.getUser().getNickname());
+
+
+        dto.setUserAvatarUrl(getUserAvatarUrlCached(answer.getUser().getId()));
+
+        dto.setAccepted(answer.getIsAccepted());
+        dto.setLikeCount(answer.getLikes());
+        dto.setCreatedAt(answer.getCreatedAt());
+        dto.setModifiedAt(answer.getModifiedAt());
+
+        var steps = StepsJsonUtils.fromJson(answer.getContent());
+        dto.setSteps(
+                steps.stream().map(s -> {
+                    AnswerWithStepsDto.StepDto sd = new AnswerWithStepsDto.StepDto();
+                    sd.setStepId(s.getId());
+                    sd.setContent(s.getContent());
+                    sd.setImages(List.of());
+                    return sd;
+                }).toList()
+        );
+
+        return dto;
+    }
+
+//    // Answer 엔티티를 AnswerDto로 변환
+//    private AnswerDto convertToDto(Answer answer) {
+//        AnswerDto answerDto = new AnswerDto();
+//        answerDto.setId(answer.getId());
+//        answerDto.setContent(answer.getContent());
+//        answerDto.setQuestionId(answer.getQuestion().getId());
+//        answerDto.setUserId(answer.getUser().getId());
+//        answerDto.setUserName(answer.getUser().getUsername());
+//        answerDto.setCreatedAt(answer.getCreatedAt());
+//        answerDto.setModifiedAt(answer.getModifiedAt());
+//        answerDto.setLikeCount(answer.getLikes());
+//        answerDto.setAccepted(answer.getIsAccepted());
+//        //int totalSteps = answer.getContent().split("\n\n|\r\n\r\n").length;
+//        answerDto.setImages(imageUtils.convertToImageDtos(answer.getImages()));
+//
+//        return answerDto;
+//    }
 
     private QuestionWithAnswersDto convertToQuestionWithAnswersDto(Question question) {
         QuestionWithAnswersDto dto = new QuestionWithAnswersDto();
@@ -283,7 +411,7 @@ public class AnswerService {
         dto.setSubjectId(question.getSubject().getId());
         dto.setSubjectName(question.getSubject().getName());
         dto.setUserId(question.getUser().getId());
-        dto.setUserName(question.getUser().getUsername());
+        dto.setUserNickname(question.getUser().getNickname());
         dto.setCreatedAt(question.getCreatedAt());
         dto.setUpdatedAt(question.getModifiedAt());
         dto.setLikeCount(question.getLikes());
