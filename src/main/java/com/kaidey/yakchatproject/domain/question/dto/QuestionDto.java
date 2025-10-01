@@ -17,7 +17,7 @@ public class QuestionDto {
     private Long subjectId;
     private String subjectName;
     private Long userId;
-    private String userName;
+    private String nickname;
     private List<ImageDto> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

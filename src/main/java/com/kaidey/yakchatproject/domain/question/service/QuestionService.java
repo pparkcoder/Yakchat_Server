@@ -331,7 +331,7 @@ public class QuestionService {
         questionDto.setSubjectId(question.getSubject().getId());
         questionDto.setSubjectName(question.getSubject().getName()); // Set subject name
         questionDto.setUserId(question.getUser().getId());
-        questionDto.setUserName(question.getUser().getUsername()); // Set username based on anonymity
+        questionDto.setNickname(question.getUser().getNickname()); // Set username based on anonymity
         questionDto.setCreatedAt(question.getCreatedAt());
         questionDto.setUpdatedAt(question.getModifiedAt());
         questionDto.setLikeCount(question.getLikes());

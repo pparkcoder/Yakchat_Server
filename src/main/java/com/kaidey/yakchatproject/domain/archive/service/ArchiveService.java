@@ -104,7 +104,7 @@ public class ArchiveService {
         questionDto.setSubjectId(scrap.getQuestion().getSubject().getId());
         questionDto.setSubjectName(scrap.getQuestion().getSubject().getName());
         questionDto.setUserId(scrap.getQuestion().getUser().getId());
-        questionDto.setUserName(scrap.getQuestion().getUser().getUsername());
+        questionDto.setNickname(scrap.getQuestion().getUser().getNickname());
         questionDto.setCreatedAt(scrap.getQuestion().getCreatedAt());
         questionDto.setLikeCount(scrap.getQuestion().getLikes());
         questionDto.setViewCount(scrap.getQuestion().getViewCount());

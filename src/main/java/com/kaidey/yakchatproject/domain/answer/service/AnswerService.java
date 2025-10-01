@@ -406,7 +406,7 @@ public class AnswerService {
         dto.setId(answer.getId());
         dto.setQuestionId(answer.getQuestion().getId());
         dto.setUserId(answer.getUser().getId());
-        dto.setUserNickname(answer.getUser().getNickname());
+        dto.setNickname(answer.getUser().getNickname());
 
         dto.setUserAvatarUrl(getUserAvatarUrlCached(answer.getUser().getId()));
 

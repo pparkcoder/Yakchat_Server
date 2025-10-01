@@ -10,7 +10,7 @@ public class AnswerWithStepsDto {
     private Long id;
     private Long questionId;
     private Long userId;
-    private String userNickname;
+    private String nickname;
     private String userAvatarUrl;
     private Boolean accepted;
     private Integer likeCount;
