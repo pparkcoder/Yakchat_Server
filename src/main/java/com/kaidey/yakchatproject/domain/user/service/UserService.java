@@ -13,6 +13,7 @@ import com.kaidey.yakchatproject.global.exception.CommonErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.util.*;
 @Slf4j
@@ -33,6 +35,8 @@ public class UserService {
     private final UserGradeRepository userGradeRepository;
     private final GradeService gradeService;
     private final RedisUtil redisUtil;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final UserDeviceTokenRepository fcmTokenRepository;   // 구현/패키지에 맞게 추가
     private final ImageService imageService;
@@ -137,21 +141,15 @@ public class UserService {
     protected void softDeleteAccount(User user) {
         Long userId = user.getId();
         try {
-            // 1) nickname만 고유하게 익명화 (UNIQUE 회피용)
             String suffix = userId + "_" + System.currentTimeMillis();
             user.setNickname("탈퇴한 사용자_" + suffix);
             user.setUsername("deleted_user_" + userId);
+            user.setSchool("비공개");
 
-            // 3) 기타 PII/프로필
-            user.setSchool(null);
-
-//            // 4) 연결 자원 정리
-//            fcmTokenRepository.deleteByUserId(userId);
-//            tokenService.revokeAllTokensForUser(userId);
-//            imageService.deleteProfileImagesByUserId(userId);
-
-            // 5) 소프트 삭제 트리거 (@SQLDelete가 UPDATE로 변환)
-            userRepository.delete(user);
+            userRepository.saveAndFlush(user); // 1) 익명화 확정
+            entityManager.clear();             // 2) 컨텍스트 초기화
+            User managed = userRepository.getReferenceById(userId); // 3)
+            userRepository.delete(managed);    // 4) @SQLDelete → is_deleted=1, deleted_at=NOW()
 
             log.info("계정 소프트 삭제 처리 완료 - userId: {}", userId);
         } catch (Exception e) {

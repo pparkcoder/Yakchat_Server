@@ -20,7 +20,7 @@ import java.util.*;
 @Getter
 @Setter
 @NoArgsConstructor
-@SQLDelete(sql = "UPDATE user SET is_deleted = 1, deleted_at = NOW() WHERE user_id = ?")
+@SQLDelete(sql = "UPDATE `user` SET `is_deleted` = 1, `deleted_at` = NOW() WHERE `user_id` = ?")
 @Where(clause = "is_deleted = 0")
 @Table(name = "user")
 public class User implements UserDetails {
@@ -59,9 +59,10 @@ public class User implements UserDetails {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     /** 소프트 삭제 플래그/시각 */
-    @Column(nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     private LocalDateTime lastLoginAt;
