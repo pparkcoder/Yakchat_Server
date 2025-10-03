@@ -17,7 +17,7 @@ public class QuestionWithAnswersDto {
     private Long subjectId;
     private String subjectName;
     private Long userId;
-    private String userName;
+    private String userNickname;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private int likeCount;

@@ -2,9 +2,8 @@ package com.kaidey.yakchatproject.domain.auth.controller;
 
 import com.kaidey.yakchatproject.domain.auth.dto.*;
 import com.kaidey.yakchatproject.domain.auth.service.OcrVerificationService;
-import com.kaidey.yakchatproject.domain.auth.dto.OcrStatusResponse;
-import com.kaidey.yakchatproject.domain.auth.dto.OcrVerificationResponse;
 import com.kaidey.yakchatproject.domain.user.dto.UserDto;
+import com.kaidey.yakchatproject.domain.user.dto.DeleteAccountRequest;
 import com.kaidey.yakchatproject.domain.user.entity.UserType;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.service.UserService;
@@ -12,6 +11,7 @@ import com.kaidey.yakchatproject.global.exception.BusinessException;
 import com.kaidey.yakchatproject.global.exception.OcrErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 import com.kaidey.yakchatproject.global.util.RedisUtil;
+import com.kaidey.yakchatproject.global.security.jwt.JwtTokenProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Base64;
 import java.util.Map;
 
+
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -33,6 +34,7 @@ public class AuthController {
     private final OcrVerificationService ocrVerificationService;
     private final UserService userService;
     private final RedisUtil redisUtil;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/ocr-verify")
     public ResponseEntity<OcrVerificationResponse> verifyDocument(
@@ -81,6 +83,90 @@ public class AuthController {
         String refreshToken = request.get("refreshToken");
         Map<String, String> tokens = userService.refreshToken(refreshToken);
         return ResponseEntity.ok(tokens);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestHeader("Authorization") String authHeader) {
+
+        try {
+            String accessToken = extractTokenFromHeader(authHeader);
+            Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+            // 토큰을 블랙리스트에 추가
+            addTokenToBlacklist(accessToken);
+
+            log.info("사용자 로그아웃 완료 - userId: {}", userId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "로그아웃이 완료되었습니다.",
+                    "success", "true"
+            ));
+
+        } catch (Exception e) {
+            log.error("로그아웃 처리 중 오류 발생", e);
+            // 클라이언트 측에서는 성공으로 처리 (UX 고려)
+            return ResponseEntity.ok(Map.of(
+                    "message", "로그아웃 처리가 완료되었습니다.",
+                    "success", "true"
+            ));
+        }
+    }
+
+    /**
+     * 계정 즉시 탈퇴
+     */
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<Map<String, String>> deleteAccount(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody @Valid DeleteAccountRequest request) {
+
+        String accessToken = extractTokenFromHeader(authHeader);
+        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        // 계정 즉시 삭제 처리
+        userService.deleteAccountImmediately(userId, request);
+
+        // 현재 토큰 무효화
+        addTokenToBlacklist(accessToken);
+
+        log.info("계정 즉시 삭제 완료 - userId: {}", userId);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "계정이 즉시 삭제되었습니다.",
+                "success", "true",
+                "immediate", "true"
+        ));
+    }
+
+    private String extractTokenFromHeader(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException(UserErrorCode.INVAILD_REFRESH_TOKEN);
+        }
+        return authHeader.substring(7);
+    }
+
+    private void addTokenToBlacklist(String token) {
+        try {
+            // 토큰의 남은 만료시간 계산
+            long remainingTime = getRemainingTokenTime(token);
+            if (remainingTime > 0) {
+                String blacklistKey = "blacklist:token:" + token;
+                redisUtil.setDataExpire(blacklistKey, "blacklisted", remainingTime);
+                log.debug("토큰 블랙리스트 등록: {}..., TTL: {}초", token.substring(0, 20), remainingTime);
+            }
+        } catch (Exception e) {
+            log.warn("토큰 블랙리스트 처리 실패: {}", e.getMessage());
+        }
+    }
+
+    private long getRemainingTokenTime(String token) {
+        try {
+            // JWT 토큰에서 만료시간 추출하여 남은 시간 계산
+            // 간단히 하기 위해 기본 만료시간 사용 (실제로는 토큰에서 추출 가능)
+            return jwtTokenProvider.validateToken(token) ? 3600 : 0; // 1시간
+        } catch (Exception e) {
+            return 3600; // 기본값 1시간
+        }
     }
 
 

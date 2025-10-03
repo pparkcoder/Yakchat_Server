@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,8 +26,10 @@ public class Answer {
     @Column(name = "answer_id")
     private Long id;
 
-    @Column(nullable = false)
-    private String content; // 답변 내용
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR) // Hibernate 6 권장
+    @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
+    private String content;
 
 
     @Column(nullable = false)

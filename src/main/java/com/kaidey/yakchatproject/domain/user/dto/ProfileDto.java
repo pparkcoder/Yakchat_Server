@@ -20,6 +20,16 @@ public class ProfileDto {
     private UserType userType;
     private String school;
     private UserGrade grade;
+    private Integer age;
+
+    private String studentGrade;
+
+
+//    private String ProfileImage;
+//    private String ProfileImageUrl;
+
     private List<ImageDto> images;
 
+
 }
+

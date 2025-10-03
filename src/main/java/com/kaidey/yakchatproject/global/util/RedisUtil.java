@@ -7,7 +7,10 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 @Component
 public class RedisUtil {
 
@@ -52,6 +55,18 @@ public class RedisUtil {
         Set<String> keys = redisTemplate.keys(pattern);
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
+        }
+    }
+
+    /**
+     * 키 존재 여부 확인
+     */
+    public boolean hasKey(String key) {
+        try {
+            return redisTemplate.hasKey(key);
+        } catch (Exception e) {
+            log.error("Redis 키 존재 확인 실패 - key: {}", key, e);
+            return false;
         }
     }
 }
