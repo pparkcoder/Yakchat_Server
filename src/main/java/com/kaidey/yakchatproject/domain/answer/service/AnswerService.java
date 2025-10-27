@@ -383,7 +383,8 @@ public class AnswerService {
 				AnswerWithStepsDto.StepDto sd = new AnswerWithStepsDto.StepDto();
 				sd.setStepId(s.getId());
 				sd.setContent(s.getContent());
-				sd.setImages(List.of());
+				sd.setImages(imageUtils.convertToImageDtos(answer.getImages()));
+
 				return sd;
 			}).toList()
 		);
