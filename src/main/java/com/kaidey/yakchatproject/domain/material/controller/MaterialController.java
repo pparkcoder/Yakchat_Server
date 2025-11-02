@@ -42,13 +42,14 @@ public class MaterialController {
 	}
 
 	// 학습자료 수정
-	@PutMapping
+	@PutMapping("/{id}")
 	public ResponseEntity<MaterialResponse> updateMaterial(
 		@Valid @RequestBody MaterialUpdateRequest request,
+		@PathVariable Long id,
 		@RequestHeader("Authorization") String token) {
 
 		Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
-		return ResponseEntity.ok(materialService.updateMaterial(request, userId));
+		return ResponseEntity.ok(materialService.updateMaterial(request, userId, id));
 	}
 
 	// 학습자료 조회

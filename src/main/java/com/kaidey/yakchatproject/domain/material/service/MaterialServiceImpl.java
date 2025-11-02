@@ -58,12 +58,12 @@ public class MaterialServiceImpl implements MaterialService {
 	}
 
 	@Override
-	public MaterialResponse updateMaterial(MaterialUpdateRequest request, Long userId) {
+	public MaterialResponse updateMaterial(MaterialUpdateRequest request, Long userId, Long materialId) {
 		List<Image> newImages = new ArrayList<>();
 		Subject subject = subjectRepository.findById(request.getSubjectId())
 			.orElseThrow(() -> new BusinessException(QuestionErrorCode.NOT_FOUND_SUBJECT));
 
-		Material material = materialRepository.findById(request.getId())
+		Material material = materialRepository.findById(materialId)
 			.orElseThrow(() -> new BusinessException(MaterialErrorCode.NOT_FOUND_MATERIAL));
 
 		validateAuthority(material, userId);
