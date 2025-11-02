@@ -8,6 +8,7 @@ import org.hibernate.annotations.BatchSize;
 
 import com.kaidey.yakchatproject.domain.image.entity.Image;
 import com.kaidey.yakchatproject.domain.material.request.MaterialCreateRequest;
+import com.kaidey.yakchatproject.domain.material.request.MaterialUpdateRequest;
 import com.kaidey.yakchatproject.domain.subject.entity.Subject;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 
@@ -65,6 +66,23 @@ public class Material {
 	public void addImage(List<Image> imageList) {
 		for (Image image : imageList) {
 			images.add(image);
+		}
+	}
+
+	public void update(MaterialUpdateRequest request, Subject subject, List<Image> images) {
+		this.title = request.getTitle();
+		this.subject = subject;
+		this.modifiedAt = LocalDateTime.now();
+
+		if (images.size() > 0) {
+			for (Image image : this.images) {
+				image.setMaterial(null);
+			}
+			this.images.clear();
+			for (Image image : images) {
+				this.images.add(image);
+				image.setMaterial(this);
+			}
 		}
 	}
 }

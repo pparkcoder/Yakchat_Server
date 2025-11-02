@@ -7,7 +7,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
-public class MaterialCreateRequest {
+public class MaterialUpdateRequest {
+
+	@NotNull
+	private Long id;
 
 	@NotNull
 	private String title;
