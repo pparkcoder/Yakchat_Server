@@ -53,7 +53,7 @@ public class ArchiveController {
 
 	// 내 학습자료 조회
 	@GetMapping("/my-materials")
-	public ResponseEntity<MaterialResponse> getMyMaterial(@RequestHeader("Authorization") String token) {
+	public ResponseEntity<List<MaterialResponse>> getMyMaterial(@RequestHeader("Authorization") String token) {
 		Long userId = jwtTokenProvider.getUserIdFromToken(token.substring(7));
 		return ResponseEntity.ok(materialService.getMaterialByUserId(userId));
 	}

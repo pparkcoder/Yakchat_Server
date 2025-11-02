@@ -2,6 +2,7 @@ package com.kaidey.yakchatproject.domain.material.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,11 +87,9 @@ public class MaterialServiceImpl implements MaterialService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public MaterialResponse getMaterialByUserId(Long userId) {
-		Material material = materialRepository.findByUserIdOrderByCreatedAt(userId)
-			.orElseThrow(() -> new BusinessException(MaterialErrorCode.NOT_FOUND_MATERIAL));
-
-		return buildMaterialResponse(material);
+	public List<MaterialResponse> getMaterialByUserId(Long userId) {
+		return materialRepository.findByUserIdOrderByCreatedAt(userId)
+			.stream().map(this::buildMaterialResponse).collect(Collectors.toList());
 	}
 
 	@Override

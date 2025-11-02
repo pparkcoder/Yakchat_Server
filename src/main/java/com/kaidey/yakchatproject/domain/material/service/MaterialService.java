@@ -1,5 +1,7 @@
 package com.kaidey.yakchatproject.domain.material.service;
 
+import java.util.List;
+
 import com.kaidey.yakchatproject.domain.material.request.MaterialCreateRequest;
 import com.kaidey.yakchatproject.domain.material.request.MaterialUpdateRequest;
 import com.kaidey.yakchatproject.domain.material.response.MaterialResponse;
@@ -12,7 +14,7 @@ public interface MaterialService {
 
 	MaterialResponse getMaterialById(Long id);
 
-	MaterialResponse getMaterialByUserId(Long userId);
+	List<MaterialResponse> getMaterialByUserId(Long userId);
 
 	Boolean deleteMaterialById(Long id);
 }
