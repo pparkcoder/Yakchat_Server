@@ -17,6 +17,7 @@ import com.kaidey.yakchatproject.domain.subject.repository.SubjectRepository;
 import com.kaidey.yakchatproject.domain.user.entity.User;
 import com.kaidey.yakchatproject.domain.user.repository.UserRepository;
 import com.kaidey.yakchatproject.global.exception.BusinessException;
+import com.kaidey.yakchatproject.global.exception.MaterialErrorCode;
 import com.kaidey.yakchatproject.global.exception.QuestionErrorCode;
 import com.kaidey.yakchatproject.global.exception.UserErrorCode;
 
@@ -24,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MaterialServiceImpl implements MaterialService {
 
 	private final MaterialRepository materialRepository;
@@ -49,7 +51,36 @@ public class MaterialServiceImpl implements MaterialService {
 			material.addImage(imageList);
 		}
 
-		return MaterialResponse.of(materialRepository.save(material),
-			imageUtils.convertToImageDtos(material.getImages()));
+		return buildMaterialResponse(materialRepository.save(material));
+	}
+
+	@Override
+	public MaterialResponse getMaterialById(Long id) {
+		Material material = materialRepository.findById(id)
+			.orElseThrow(() -> new BusinessException(MaterialErrorCode.NOT_FOUND_MATERIAL));
+
+		return buildMaterialResponse(material);
+	}
+
+	@Override
+	public MaterialResponse getMaterialByUserId(Long userId) {
+		Material material = materialRepository.findByUserIdOrderByCreatedAt(userId)
+			.orElseThrow(() -> new BusinessException(MaterialErrorCode.NOT_FOUND_MATERIAL));
+
+		return buildMaterialResponse(material);
+	}
+
+	@Override
+	@Transactional
+	public Boolean deleteMaterialById(Long id) {
+		if (!materialRepository.existsById(id)) {
+			throw new BusinessException(MaterialErrorCode.NOT_FOUND_MATERIAL);
+		}
+		materialRepository.deleteById(id);
+		return true;
+	}
+
+	private MaterialResponse buildMaterialResponse(Material material) {
+		return MaterialResponse.of(material, imageUtils.convertToImageDtos(material.getImages()));
 	}
 }
