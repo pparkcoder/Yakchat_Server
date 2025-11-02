@@ -10,9 +10,6 @@ import lombok.Getter;
 public class MaterialUpdateRequest {
 
 	@NotNull
-	private Long id;
-
-	@NotNull
 	private String title;
 
 	@NotNull

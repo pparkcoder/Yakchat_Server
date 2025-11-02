@@ -10,7 +10,7 @@ public interface MaterialService {
 
 	MaterialResponse createMaterial(MaterialCreateRequest request, Long userId);
 
-	MaterialResponse updateMaterial(MaterialUpdateRequest request, Long userId);
+	MaterialResponse updateMaterial(MaterialUpdateRequest request, Long userId, Long materialId);
 
 	MaterialResponse getMaterialById(Long id);
 
