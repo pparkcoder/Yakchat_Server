@@ -1,5 +1,7 @@
 package com.kaidey.yakchatproject.domain.material.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,7 +59,7 @@ public class MaterialController {
 
 	// 회원 ID로 학습자료 조회
 	@GetMapping
-	public ResponseEntity<MaterialResponse> getMaterialByUserId(@RequestParam("userId") Long userId) {
+	public ResponseEntity<List<MaterialResponse>> getMaterialByUserId(@RequestParam("userId") Long userId) {
 		return ResponseEntity.ok(materialService.getMaterialByUserId(userId));
 	}
 
